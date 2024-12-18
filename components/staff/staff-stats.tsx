@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useScheduleStore } from "@/lib/stores/schedule-store";
-import { BUSINESS_HOURS, COVERAGE_LEVELS } from "@/lib/constants";
+import { BUSINESS_HOURS } from "@/lib/constants";
 
 export function StaffStats() {
   const { employees } = useScheduleStore();
