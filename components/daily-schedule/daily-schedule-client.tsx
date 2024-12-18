@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { DndContext, DragEndEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Card } from "@/components/ui/card";
 import { TimeHeader } from "./time-header";
@@ -7,10 +8,15 @@ import { ScheduleGrid } from "./schedule-grid";
 import { useScheduleStore } from "@/lib/stores/schedule-store";
 import { validateScheduleChange } from "@/lib/utils/schedule";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function DailyScheduleClient() {
-  const { employees, updateEmployeeSchedule } = useScheduleStore();
+  const { employees, loading, error, fetchEmployees, updateEmployeeSchedule } = useScheduleStore();
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: { distance: 5 },
@@ -48,6 +54,22 @@ export function DailyScheduleClient() {
       description: `Schedule block moved to ${newHour % 12 || 12}:00 ${newHour < 12 ? 'AM' : 'PM'}`,
     });
   };
+
+  if (loading) {
+    return (
+      <Card className="p-4">
+        <Skeleton className="h-[400px] w-full" />
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-4">
+        <div className="text-sm text-destructive">{error}</div>
+      </Card>
+    );
+  }
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       .from('shifts')
       .insert([
         {
-          teacher_id: employeeId,
+          teacher_id: employeeId,  // Using teacher_id to match our schema
           date,
           start_time: startTime,
           end_time: endTime,
@@ -29,7 +29,10 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
 
     return NextResponse.json(data);
   } catch (error) {

@@ -1,17 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MOCK_EMPLOYEES } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+
+type Teacher = {
+  id: string;
+  name: string;
+  role: string;
+};
 
 export function AddShiftForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [formData, setFormData] = useState({
     employeeId: "",
     date: new Date().toISOString().split('T')[0],
@@ -19,10 +26,31 @@ export function AddShiftForm() {
     endTime: "",
   });
 
+  useEffect(() => {
+    async function fetchTeachers() {
+      const { data, error } = await supabase
+        .from('teachers')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error('Error fetching teachers:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load teachers",
+          variant: "destructive",
+        });
+      } else if (data) {
+        setTeachers(data);
+      }
+    }
+
+    fetchTeachers();
+  }, [toast]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic validation
     if (!formData.employeeId || !formData.date || !formData.startTime || !formData.endTime) {
       toast({
         title: "Error",
@@ -32,17 +60,31 @@ export function AddShiftForm() {
       return;
     }
 
+    console.log('Submitting form data:', {
+      teacher_id: formData.employeeId,
+      date: formData.date,
+      start_time: formData.startTime,
+      end_time: formData.endTime,
+    });
+
     try {
       const response = await fetch('/api/shifts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          employeeId: formData.employeeId,
+          date: formData.date,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+        }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to create shift');
+        throw new Error(data.error || 'Failed to create shift');
       }
 
       toast({
@@ -52,16 +94,16 @@ export function AddShiftForm() {
 
       router.refresh();
       
-      // Close the dialog
       const closeButton = document.getElementById('add-shift-dialog-close');
       if (closeButton) {
         closeButton.click();
       }
       
     } catch (error) {
+      console.error('Submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to add shift",
+        description: error instanceof Error ? error.message : "Failed to add shift",
         variant: "destructive",
       });
     }
@@ -70,15 +112,15 @@ export function AddShiftForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="employee">Employee</Label>
+        <Label htmlFor="employee">Teacher</Label>
         <Select onValueChange={(value) => setFormData({ ...formData, employeeId: value })} required>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select employee" />
+            <SelectValue placeholder="Select teacher" />
           </SelectTrigger>
           <SelectContent>
-            {MOCK_EMPLOYEES.map((employee) => (
-              <SelectItem key={employee.id} value={employee.id}>
-                {employee.name}
+            {teachers.map((teacher) => (
+              <SelectItem key={teacher.id} value={teacher.id}>
+                {teacher.name}
               </SelectItem>
             ))}
           </SelectContent>

@@ -1,19 +1,15 @@
 // lib/stores/schedule-store.ts
-import { create } from 'zustand'
-import { Employee } from '@/types/schedule'
-import { getEmployees, updateEmployeeSchedule } from '@/lib/api'
-import { BUSINESS_HOURS } from '@/lib/constants'
+import { create } from 'zustand';
+import { Employee } from '@/types/schedule';
+import { supabase } from '@/lib/supabase';
+import { BUSINESS_HOURS } from '@/lib/constants';
 
 interface ScheduleState {
-  employees: Employee[]
-  loading: boolean
-  error: string | null
-  fetchEmployees: () => Promise<void>
-  updateEmployeeSchedule: (
-    employeeId: string,
-    currentHour: number,
-    newHour: number
-  ) => Promise<void>
+  employees: Employee[];
+  loading: boolean;
+  error: string | null;
+  fetchEmployees: () => Promise<void>;
+  updateEmployeeSchedule: (employeeId: string, currentHour: number, newHour: number) => Promise<void>;
 }
 
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
@@ -22,29 +18,87 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   error: null,
 
   fetchEmployees: async () => {
-    set({ loading: true, error: null })
+    set({ loading: true, error: null });
     try {
-      const employees = await getEmployees()
-      set({ employees, loading: false })
+      // Fetch teachers and their schedules
+      const { data: teachers, error: teachersError } = await supabase
+        .from('teachers')
+        .select(`
+          id,
+          name,
+          role,
+          shifts (
+            date,
+            start_time,
+            end_time
+          )
+        `)
+        .order('name');
+
+      if (teachersError) throw teachersError;
+
+      // Transform the data to match our Employee type
+      const employees: Employee[] = teachers.map(teacher => {
+        // Create schedule blocks for business hours
+        const schedule = Array.from(
+          { length: BUSINESS_HOURS.END - BUSINESS_HOURS.START },
+          (_, index) => ({
+            hour: BUSINESS_HOURS.START + index,
+            isActive: false
+          })
+        );
+
+        // Mark hours as active based on shifts
+        if (teacher.shifts) {
+          teacher.shifts.forEach(shift => {
+            const startHour = parseInt(shift.start_time.split(':')[0]);
+            const endHour = parseInt(shift.end_time.split(':')[0]);
+            
+            for (let hour = startHour; hour < endHour; hour++) {
+              const scheduleIndex = hour - BUSINESS_HOURS.START;
+              if (scheduleIndex >= 0 && scheduleIndex < schedule.length) {
+                schedule[scheduleIndex].isActive = true;
+              }
+            }
+          });
+        }
+
+        return {
+          id: teacher.id,
+          name: teacher.name,
+          role: teacher.role,
+          schedule,
+          availability: []
+        };
+      });
+
+      set({ employees, loading: false });
     } catch (error) {
-      set({ error: 'Failed to fetch employees', loading: false })
+      console.error('Error fetching employees:', error);
+      set({ error: 'Failed to fetch employees', loading: false });
     }
   },
 
   updateEmployeeSchedule: async (employeeId, currentHour, newHour) => {
-    // Only update if within business hours
-    if (newHour < BUSINESS_HOURS.START || newHour >= BUSINESS_HOURS.END) {
-      return
-    }
-
     try {
-      const success = await updateEmployeeSchedule(employeeId, currentHour, newHour)
-      if (success) {
-        // Refresh employees data
-        await get().fetchEmployees()
-      }
+      const date = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('shifts')
+        .upsert({
+          teacher_id: employeeId,
+          date,
+          start_time: `${newHour}:00`,
+          end_time: `${newHour + 1}:00`
+        })
+        .select();
+
+      if (error) throw error;
+
+      // Refresh the employees data
+      await get().fetchEmployees();
     } catch (error) {
-      set({ error: 'Failed to update schedule' })
+      console.error('Error updating schedule:', error);
+      set({ error: 'Failed to update schedule' });
     }
   }
-}))
+}));
