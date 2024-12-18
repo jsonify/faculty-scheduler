@@ -1,3 +1,4 @@
+// components/daily-schedule/staff-schedule.tsx
 "use client";
 
 import { Employee } from "@/types/schedule";
@@ -9,10 +10,12 @@ type StaffScheduleProps = {
 };
 
 export function StaffSchedule({ employee, date }: StaffScheduleProps) {
+  const availability = employee.availability || [];
+  
   return (
     <div className="relative h-[calc(24*3rem)] border-b">
       <div className="absolute left-0 top-0 h-full w-full">
-        {employee.availability.map((slot, index) => {
+        {availability.map((slot, index) => {
           const startHour = parseInt(slot.start.split(":")[0]);
           const endHour = parseInt(slot.end.split(":")[0]);
           const top = `${(startHour / 24) * 100}%`;

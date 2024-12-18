@@ -3,11 +3,17 @@ export type TimeBlock = {
   isActive: boolean;
 };
 
+export type TimeSlot = {
+  start: string;
+  end: string;
+};
+
 export type Employee = {
   id: string;
   name: string;
   role: string;
   schedule: TimeBlock[];
+  availability: TimeSlot[]; 
 };
 
 export type Break = {

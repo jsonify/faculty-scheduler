@@ -29,5 +29,6 @@ export const MOCK_EMPLOYEES: Employee[] = Array.from({ length: 20 }, (_, i) => (
   id: (i + 1).toString(),
   name: `Teacher ${i + 1}`,
   role: "Teacher",
-  schedule: generateRandomSchedule()
+  schedule: generateRandomSchedule(),
+  availability: [] // Add empty array or generate mock availability
 }));
