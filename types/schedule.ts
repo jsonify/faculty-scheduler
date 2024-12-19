@@ -1,3 +1,5 @@
+// types/schedule.ts
+
 export type TimeBlock = {
   hour: number;
   isActive: boolean;
@@ -13,7 +15,10 @@ export type Employee = {
   name: string;
   role: string;
   schedule: TimeBlock[];
-  availability: TimeSlot[]; 
+  availability: TimeSlot[];
+  dailyCapacity?: number;
+  shiftStart?: string;
+  shiftEnd?: string;
 };
 
 export type Break = {

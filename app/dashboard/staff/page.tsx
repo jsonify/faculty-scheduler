@@ -1,3 +1,5 @@
+"use client";
+
 import { StaffList } from "@/components/staff/staff-list";
 import { StaffStats } from "@/components/staff/staff-stats";
 

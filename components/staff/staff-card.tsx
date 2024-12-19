@@ -1,60 +1,82 @@
+// components/staff/staff-card.tsx
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Employee } from "@/types/schedule";
-import { Clock } from "lucide-react";
-import { BUSINESS_HOURS } from "@/lib/constants";
+import { Clock, ChevronRight, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { StaffEditModal } from "./staff-edit-modal";
 
-type StaffCardProps = {
+interface StaffCardProps {
   employee: Employee;
-};
+  onUpdateSettings: (
+    employeeId: string, 
+    updates: {
+      dailyCapacity?: number;
+      shiftStart?: string;
+      shiftEnd?: string;
+    }
+  ) => void;
+}
 
-export function StaffCard({ employee }: StaffCardProps) {
+export function StaffCard({ employee, onUpdateSettings }: StaffCardProps) {
   const router = useRouter();
-  const activeBlocks = employee.schedule.filter(block => block.isActive);
-  
-  // Sort blocks by hour to ensure consistent ordering
-  const sortedBlocks = [...activeBlocks].sort((a, b) => a.hour - b.hour);
-  
-  const formatHour = (hour: number) => {
-    return `${hour % 12 || 12}:00 ${hour < 12 ? 'AM' : 'PM'}`;
-  };
-
-  // Calculate schedule display only if there are active blocks
-  const scheduleDisplay = sortedBlocks.length > 0
-    ? `${formatHour(sortedBlocks[0].hour)} - ${formatHour(sortedBlocks[sortedBlocks.length - 1].hour)}`
-    : "No hours scheduled";
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const handleViewSchedule = () => {
     router.push(`/dashboard/staff/${employee.id}`);
   };
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold">{employee.name}</h3>
-            <p className="text-sm text-muted-foreground">{employee.role}</p>
+    <>
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">{employee.name}</h3>
+              <p className="text-sm text-muted-foreground">{employee.role}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => setEditModalOpen(true)}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleViewSchedule}
+                className="gap-2"
+              >
+                View Schedule
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleViewSchedule}
-          >
-            View Schedule
-          </Button>
-        </div>
-        
-        <div className="mt-4 flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span>{scheduleDisplay}</span>
+          
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4" />
+              <span>
+                {employee.shiftStart || "09:00"} - {employee.shiftEnd || "17:00"}
+              </span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Daily Capacity: {Math.floor((employee.dailyCapacity || 480) / 60)}h {(employee.dailyCapacity || 480) % 60}m
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <StaffEditModal 
+        employee={employee}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        onSave={onUpdateSettings}
+      />
+    </>
   );
 }

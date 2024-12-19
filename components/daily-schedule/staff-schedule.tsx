@@ -1,42 +1,61 @@
-// components/daily-schedule/staff-schedule.tsx
 "use client";
 
-import { Employee } from "@/types/schedule";
-import { format } from "date-fns";
+import { useEffect } from "react";
+import { useScheduleStore } from "@/lib/stores/schedule-store";
+import StaffScheduleDetail from "./staff-schedule-detail";
+import { Skeleton } from "@/components/ui/skeleton";
 
-type StaffScheduleProps = {
-  employee: Employee;
-  date: Date;
-};
+export default function StaffSchedulePage({ params }: { params: { id: string } }) {
+  const { employees, loading, error, fetchEmployees } = useScheduleStore();
 
-export function StaffSchedule({ employee, date }: StaffScheduleProps) {
-  const availability = employee.availability || [];
-  
-  return (
-    <div className="relative h-[calc(24*3rem)] border-b">
-      <div className="absolute left-0 top-0 h-full w-full">
-        {availability.map((slot, index) => {
-          const startHour = parseInt(slot.start.split(":")[0]);
-          const endHour = parseInt(slot.end.split(":")[0]);
-          const top = `${(startHour / 24) * 100}%`;
-          const height = `${((endHour - startHour) / 24) * 100}%`;
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
 
-          return (
-            <div
-              key={index}
-              className="absolute left-0 w-full bg-primary/10 rounded-sm"
-              style={{ top, height }}
-            >
-              <div className="p-2 text-xs">
-                <p className="font-medium">{employee.name}</p>
-                <p className="text-muted-foreground">
-                  {slot.start} - {slot.end}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-[200px]" />
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-[400px]" />
+          <Skeleton className="h-[400px]" />
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  const employee = employees.find(e => e.id === params.id);
+  
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <p className="text-destructive mb-4">{error}</p>
+        <button 
+          onClick={() => fetchEmployees()}
+          className="text-sm text-muted-foreground hover:text-primary"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (!employee) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <h2 className="text-2xl font-semibold mb-2">Staff Member Not Found</h2>
+        <p className="text-muted-foreground mb-4">
+          The staff member you&apos;re looking for doesn&apos;t exist or has been removed.
+        </p>
+        <a 
+          href="/dashboard/staff"
+          className="text-sm text-primary hover:underline"
+        >
+          Return to Staff List
+        </a>
+      </div>
+    );
+  }
+
+  return <StaffScheduleDetail employee={employee} />;
 }
