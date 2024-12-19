@@ -18,21 +18,26 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   error: null,
 
   fetchEmployees: async () => {
+    // Don't fetch if we're already loading
+    if (get().loading) return;
+    
     set({ loading: true, error: null });
     try {
-      // Fetch teachers and their schedules
+      // Fetch teachers and their schedules for today only
+      const today = new Date().toISOString().split('T')[0];
       const { data: teachers, error: teachersError } = await supabase
         .from('teachers')
         .select(`
           id,
           name,
           role,
-          shifts (
+          shifts!inner (
             date,
             start_time,
             end_time
           )
         `)
+        .eq('shifts.date', today)
         .order('name');
 
       if (teachersError) throw teachersError;

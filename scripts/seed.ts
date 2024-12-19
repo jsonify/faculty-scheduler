@@ -1,7 +1,33 @@
 // scripts/seed.ts
 import 'dotenv/config';
 import { supabase } from '@/lib/supabase';
-import { MOCK_EMPLOYEES } from '@/lib/mock-data';
+
+// Array of realistic teacher names
+const TEACHER_NAMES = [
+  'Sarah Johnson',
+  'Michael Chen',
+  'Emily Rodriguez',
+  'David Kim',
+  'Rachel Thompson',
+  'James Wilson',
+  'Maria Garcia',
+  'John Smith',
+  'Lisa Patel',
+  'Robert Taylor',
+  'Jennifer Lee',
+  'William Brown',
+  'Amanda Martinez',
+  'Thomas Anderson',
+  'Nicole White'
+];
+
+function generateMockUUID() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 async function seedDatabase() {
   try {
@@ -10,17 +36,17 @@ async function seedDatabase() {
     await supabase.from('shifts').delete().neq('id', 'none');
     await supabase.from('teachers').delete().neq('id', 'none');
 
-    // Insert teachers
+    // Create teachers with unique names
     console.log('Inserting teachers...');
+    const teachersData = TEACHER_NAMES.map(name => ({
+      id: generateMockUUID(),
+      name: name,
+      role: 'Teacher'
+    }));
+
     const { data: teachers, error: teacherError } = await supabase
       .from('teachers')
-      .insert(
-        MOCK_EMPLOYEES.map(employee => ({
-          id: employee.id,
-          name: employee.name,
-          role: employee.role
-        }))
-      )
+      .insert(teachersData)
       .select();
 
     if (teacherError) {
@@ -30,16 +56,22 @@ async function seedDatabase() {
 
     console.log('Successfully seeded teachers:', teachers?.length);
 
-    // Create some example shifts for each teacher
+    // Create today's shifts for each teacher
     console.log('Creating shifts...');
-    const shifts = teachers?.flatMap(teacher => {
-      const today = new Date();
-      return Array.from({ length: 3 }, (_, i) => ({
-        teacher_id: teacher.id,  // Using teacher_id to match schema
-        date: new Date(today.setDate(today.getDate() + i)).toISOString().split('T')[0],
-        start_time: '08:00',
-        end_time: '16:00'
-      }));
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Create shifts with staggered start times
+    const shifts = teachers?.map((teacher, index) => {
+      // Stagger start times between 8 AM and 10 AM
+      const startHour = 8 + (index % 3); // Will give us 8, 9, or 10
+      const endHour = startHour + 8; // 8-hour shifts
+      
+      return {
+        teacher_id: teacher.id,
+        date: today,
+        start_time: `${startHour.toString().padStart(2, '0')}:00`,
+        end_time: `${endHour.toString().padStart(2, '0')}:00`
+      };
     }) || [];
 
     if (shifts.length > 0) {
@@ -56,6 +88,7 @@ async function seedDatabase() {
       console.log('Successfully seeded shifts:', createdShifts?.length);
     }
 
+    console.log('Database seeding completed successfully!');
     process.exit(0);
     
   } catch (error) {

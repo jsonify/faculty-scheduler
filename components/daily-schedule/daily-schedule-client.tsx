@@ -15,8 +15,21 @@ export function DailyScheduleClient() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
+    let mounted = true;
+
+    async function loadEmployees() {
+      if (mounted) {
+        await fetchEmployees();
+      }
+    }
+
+    loadEmployees();
+
+    // Cleanup function to prevent updates if component unmounts
+    return () => {
+      mounted = false;
+    };
+  }, []); // Empty dependency array since fetchEmployees is from zustand store
 
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: { distance: 5 },
