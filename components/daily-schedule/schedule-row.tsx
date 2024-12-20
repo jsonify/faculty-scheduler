@@ -35,6 +35,7 @@ export function ScheduleRow({ employee }: ScheduleRowProps) {
 
   const handleViewSchedule = () => {
     router.push(`/dashboard/staff/${employee.id}`);
+    console.log('Employee ID:', employee.id)
   };
 
   return (

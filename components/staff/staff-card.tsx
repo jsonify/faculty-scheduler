@@ -26,7 +26,9 @@ export function StaffCard({ employee, onUpdateSettings }: StaffCardProps) {
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   const handleViewSchedule = () => {
+    // Updated route to match the new staff-specific schedule page
     router.push(`/dashboard/staff/${employee.id}`);
+    console.log('Employee ID:', employee.id)
   };
 
   return (

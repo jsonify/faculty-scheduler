@@ -10,7 +10,11 @@ import { validateScheduleChange } from "@/lib/utils/schedule";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function DailyScheduleClient() {
+type DailyScheduleClientProps = {
+  employeeId?: string;
+};
+
+export function DailyScheduleClient({ employeeId }: DailyScheduleClientProps) {
   const { employees, loading, error, fetchEmployees, updateEmployeeSchedule } = useScheduleStore();
   const { toast } = useToast();
 
@@ -25,11 +29,10 @@ export function DailyScheduleClient() {
 
     loadEmployees();
 
-    // Cleanup function to prevent updates if component unmounts
     return () => {
       mounted = false;
     };
-  }, []); // Empty dependency array since fetchEmployees is from zustand store
+  }, []);
 
   const mouseSensor = useSensor(MouseSensor, {
     activationConstraint: { distance: 5 },
@@ -43,13 +46,13 @@ export function DailyScheduleClient() {
     const { active, over } = event;
     if (!over) return;
 
-    const { employeeId, hour: currentHour } = active.data.current || {};
+    const { employeeId: draggedEmployeeId, hour: currentHour } = active.data.current || {};
     const [targetEmployeeId, , targetHour] = over.id.toString().split('-');
     const newHour = parseInt(targetHour);
 
-    if (targetEmployeeId !== employeeId) return;
+    if (targetEmployeeId !== draggedEmployeeId) return;
 
-    const validation = validateScheduleChange(employees, employeeId, newHour, currentHour);
+    const validation = validateScheduleChange(employees, draggedEmployeeId, newHour, currentHour);
     
     if (!validation.isValid) {
       toast({
@@ -60,7 +63,7 @@ export function DailyScheduleClient() {
       return;
     }
 
-    updateEmployeeSchedule(employeeId, currentHour, newHour);
+    updateEmployeeSchedule(draggedEmployeeId, currentHour, newHour);
     
     toast({
       title: "Schedule Updated",
@@ -84,13 +87,18 @@ export function DailyScheduleClient() {
     );
   }
 
+  // Filter employees if employeeId is provided
+  const filteredEmployees = employeeId 
+    ? employees.filter(emp => emp.id === employeeId)
+    : employees;
+
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <Card className="p-4">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <TimeHeader />
-            <ScheduleGrid employees={employees} />
+            <ScheduleGrid employees={filteredEmployees} />
           </table>
         </div>
       </Card>
