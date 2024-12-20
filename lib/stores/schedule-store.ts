@@ -1,4 +1,3 @@
-// lib/stores/schedule-store.ts
 import { create } from 'zustand';
 import { Employee } from '@/types/schedule';
 import { supabase } from '@/lib/supabase';
@@ -9,14 +8,8 @@ interface ScheduleState {
   loading: boolean;
   error: string | null;
   fetchEmployees: () => Promise<void>;
-  updateEmployeeSettings: (
-    employeeId: string, 
-    updates: {
-      dailyCapacity?: number;
-      shiftStart?: string;
-      shiftEnd?: string;
-    }
-  ) => Promise<void>;
+  updateEmployeeSettings: (employeeId: string, updates: Partial<Employee>) => Promise<void>;
+  updateEmployeeSchedule: (employeeId: string, currentHour: number, newHour: number) => Promise<void>;
 }
 
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
@@ -27,89 +20,122 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   fetchEmployees: async () => {
     set({ loading: true, error: null });
     try {
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Changed from inner join to left join
-      const { data: teachers, error: teachersError } = await supabase
+      const { data: employees, error } = await supabase
         .from('teachers')
-        .select(`
-          *,
-          shifts (
-            start_time,
-            end_time,
-            date
-          )
-        `)
+        .select('*')
         .order('name');
 
-      if (teachersError) throw teachersError;
+      if (error) throw error;
 
-      const employees = teachers.map(teacher => {
-        const schedule = Array.from(
+      // Transform the data to match our Employee type
+      const transformedEmployees: Employee[] = employees.map(emp => ({
+        id: emp.id,
+        name: emp.name,
+        role: emp.role || "Teacher", // Default to "Teacher" if role is not set
+        schedule: [], // We'll populate this from shifts later
+        availability: [], // We'll populate this from availability table
+        isAvailable: emp.is_available ?? true,
+        dailyCapacity: emp.daily_capacity,
+        shiftStart: emp.shift_start,
+        shiftEnd: emp.shift_end
+      }));
+
+      // Now fetch schedules for each employee
+      const today = new Date().toISOString().split('T')[0];
+      const { data: shifts, error: shiftsError } = await supabase
+        .from('shifts')
+        .select('*')
+        .eq('date', today);
+
+      if (shiftsError) throw shiftsError;
+
+      // Convert shifts to schedule blocks
+      transformedEmployees.forEach(employee => {
+        const employeeShifts = shifts.filter(shift => shift.teacher_id === employee.id);
+        employee.schedule = Array.from(
           { length: BUSINESS_HOURS.END - BUSINESS_HOURS.START },
-          (_, index) => ({
-            hour: BUSINESS_HOURS.START + index,
-            isActive: false
-          })
-        );
-
-        // Filter shifts for today and mark active hours
-        const todayShifts = teacher.shifts?.filter(shift => shift.date === today) || [];
-        
-        todayShifts.forEach(shift => {
-          const startHour = parseInt(shift.start_time.split(':')[0]);
-          const endHour = parseInt(shift.end_time.split(':')[0]);
-          
-          for (let hour = startHour; hour < endHour; hour++) {
-            const scheduleIndex = hour - BUSINESS_HOURS.START;
-            if (scheduleIndex >= 0 && scheduleIndex < schedule.length) {
-              schedule[scheduleIndex].isActive = true;
-            }
+          (_, index) => {
+            const hour = BUSINESS_HOURS.START + index;
+            const isActive = employeeShifts.some(shift => {
+              const startHour = parseInt(shift.start_time.split(':')[0]);
+              const endHour = parseInt(shift.end_time.split(':')[0]);
+              return hour >= startHour && hour < endHour;
+            });
+            return {
+              hour,
+              isActive
+            };
           }
-        });
-
-        return {
-          id: teacher.id,
-          name: teacher.name,
-          role: teacher.role || 'Teacher', // Provide default role if none exists
-          schedule: schedule,
-          availability: [],
-          dailyCapacity: teacher.daily_capacity,
-          shiftStart: teacher.shift_start,
-          shiftEnd: teacher.shift_end
-        };
+        );
       });
 
-      set({ employees, loading: false });
+      set({ employees: transformedEmployees, loading: false });
     } catch (error) {
       console.error('Error fetching employees:', error);
       set({ error: 'Failed to fetch employees', loading: false });
     }
   },
 
-  updateEmployeeSettings: async (employeeId, updates) => {
+  updateEmployeeSettings: async (employeeId: string, updates: Partial<Employee>) => {
     try {
       const { error } = await supabase
         .from('teachers')
         .update({
           daily_capacity: updates.dailyCapacity,
           shift_start: updates.shiftStart,
-          shift_end: updates.shiftEnd
+          shift_end: updates.shiftEnd,
+          is_available: updates.isAvailable,
+          role: updates.role
         })
         .eq('id', employeeId);
 
       if (error) throw error;
 
-      // Update local state
       set(state => ({
         employees: state.employees.map(emp =>
-          emp.id === employeeId
-            ? { ...emp, ...updates }
-            : emp
+          emp.id === employeeId ? { ...emp, ...updates } : emp
         )
       }));
     } catch (error) {
       console.error('Error updating employee settings:', error);
+      set({ error: 'Failed to update employee settings' });
     }
   },
+
+  updateEmployeeSchedule: async (employeeId: string, currentHour: number, newHour: number) => {
+    try {
+      const date = new Date().toISOString().split('T')[0];
+      const { error } = await supabase
+        .from('shifts')
+        .upsert({
+          teacher_id: employeeId,
+          date,
+          start_time: `${newHour}:00`,
+          end_time: `${newHour + 1}:00`
+        });
+
+      if (error) throw error;
+
+      set(state => ({
+        employees: state.employees.map(emp => {
+          if (emp.id !== employeeId) return emp;
+          
+          const newSchedule = [...emp.schedule];
+          const currentBlock = newSchedule.find(block => block.hour === currentHour);
+          const newBlock = newSchedule.find(block => block.hour === newHour);
+          
+          if (currentBlock) currentBlock.isActive = false;
+          if (newBlock) newBlock.isActive = true;
+          
+          return {
+            ...emp,
+            schedule: newSchedule
+          };
+        })
+      }));
+    } catch (error) {
+      console.error('Error updating schedule:', error);
+      set({ error: 'Failed to update schedule' });
+    }
+  }
 }));

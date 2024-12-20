@@ -17,6 +17,7 @@ interface StaffCardProps {
       dailyCapacity?: number;
       shiftStart?: string;
       shiftEnd?: string;
+      role?: "Teacher" | "Para-Educator";
     }
   ) => void;
 }
