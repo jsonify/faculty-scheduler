@@ -100,6 +100,86 @@ export type Database = {
             created_at?: string
           }
         }
+        students: {
+          Row: {
+            id: string
+            name: string
+            grade: number
+            support_level: number
+            created_at: string
+          }
+          Insert: {
+            id?: string
+            name: string
+            grade: number
+            support_level: number
+            created_at?: string
+          }
+          Update: {
+            id?: string
+            name?: string
+            grade?: number
+            support_level?: number
+            created_at?: string
+          }
+        }
+        
+        student_schedules: {
+          Row: {
+            id: string
+            student_id: string
+            employee_id: string
+            requires_support: boolean
+            start_time: string
+            end_time: string
+            location: string
+            created_at: string
+          }
+          Insert: {
+            id?: string
+            student_id: string
+            employee_id: string
+            requires_support?: boolean
+            start_time: string
+            end_time: string
+            location?: string
+            created_at?: string
+          }
+          Update: {
+            id?: string
+            student_id?: string
+            employee_id?: string
+            requires_support?: boolean
+            start_time?: string
+            end_time?: string
+            location?: string
+            created_at?: string
+          }
+        }
+        
+        support_requirements: {
+          Row: {
+            id: string
+            student_id: string
+            support_level: number
+            notes: string | null
+            created_at: string
+          }
+          Insert: {
+            id?: string
+            student_id: string
+            support_level: number
+            notes?: string | null
+            created_at?: string
+          }
+          Update: {
+            id?: string
+            student_id?: string
+            support_level?: number
+            notes?: string | null
+            created_at?: string
+          }
+        }
       }
     }
   }
