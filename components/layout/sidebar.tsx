@@ -4,11 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/class-utils";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Calendar, Users } from "lucide-react";
+import { LayoutDashboard, Calendar, Users, Clock } from "lucide-react";
+
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Daily Schedule", href: "/dashboard/daily", icon: Calendar },
+  { name: "Calendar", href: "/dashboard/calendar", icon: Calendar }, // Add this line
+  { name: "Daily Schedule", href: "/dashboard/daily", icon: Clock },
   { name: "Staff", href: "/dashboard/staff", icon: Users },
 ];
 

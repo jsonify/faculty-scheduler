@@ -1,4 +1,31 @@
 // types/database.ts
+export interface Employee {
+  id: string;
+  name: string;
+  role: "teacher" | "para-educator";
+  created_at: string;
+  schedules?: {
+    id: string;
+    hour: number;
+    isActive: boolean;
+    employee_id: string;
+    created_at: string;
+  }[];
+  shifts?: Tables['shifts']['Row'][];
+  breaks?: Tables['breaks']['Row'][];
+}
+
+export interface Shift {
+  id: string;
+  employee_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  created_at: string;
+}
+
+type Tables = Database['public']['Tables'];
+
 export type Database = {
     public: {
       Tables: {

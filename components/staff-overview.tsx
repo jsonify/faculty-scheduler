@@ -12,10 +12,10 @@ export function StaffOverview() {
  const metrics = {
    totalStaff: employees.length,
    activeTeachers: employees.filter(e => 
-     e.role === "teacher" && e.schedule.some(block => block.isActive)
+     e.role === "Teacher" && e.schedule.some(block => block.isActive)
    ).length,
    activeParas: employees.filter(e => 
-     e.role === "para-educator" && e.schedule.some(block => block.isActive)
+     e.role === "Para-Educator" && e.schedule.some(block => block.isActive)
    ).length,
    staffWithFullSchedule: employees.filter(e => {
      const activeHours = e.schedule.filter(block => block.isActive).length;

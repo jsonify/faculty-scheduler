@@ -1,6 +1,6 @@
 // types/para-educator.ts
 import { Database } from './database';
-import { StudentWithDetails } from './students';
+import { StudentWithDetails } from './student';
 
 export type ParaEducator = Database['public']['Tables']['employees']['Row'] & {
   shifts?: Database['public']['Tables']['shifts']['Row'][];
