@@ -1,23 +1,32 @@
+// app/dashboard/staff/page.tsx
+"use client";
+
+import { useState } from 'react';
 import { StaffList } from "@/components/staff/staff-list";
 import { StaffStats } from "@/components/staff/staff-stats";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { EmployeeDialog } from "@/components/dialogs/employee-dialog";
 import { UserPlus } from "lucide-react";
+import { AddEmployeeForm } from "@/components/forms/add-employee-form";
 
 export default function StaffPage() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Faculty Management</h1>
-        <Dialog>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Employee
-            </Button>
+            <Button>Add Employee</Button>
           </DialogTrigger>
-          <EmployeeDialog />
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Add New Employee</DialogTitle>
+            </DialogHeader>
+            <AddEmployeeForm onClose={() => setDialogOpen(false)} />
+          </DialogContent>
         </Dialog>
       </div>
       

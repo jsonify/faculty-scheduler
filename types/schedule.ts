@@ -15,15 +15,19 @@ export type TimeSlot = {
 export type Employee = {
   id: string;
   name: string;
-  role: "Teacher" | "Para-Educator";  // Now explicitly typing roles
-  schedule: TimeBlock[];
-  availability: TimeSlot[];
-  dailyCapacity?: number;
-  shiftStart?: string;
-  shiftEnd?: string;
-  // New fields for para-educators
-  isAvailable?: boolean;
-  currentAssignment?: string;  // Student ID they're currently assigned to
+  role: 'teacher' | 'para-educator';
+  scheduleType: 'fixed' | 'flexible';
+  defaultStartTime?: string;
+  defaultEndTime?: string;
+  availability?: EmployeeAvailability[];
+};
+
+export type EmployeeAvailability = {
+  id: string;
+  employeeId: string;
+  dayOfWeek: number; // 0-6 (Sunday-Saturday)
+  startTime: string;
+  endTime: string;
 };
 
 export type Break = {
