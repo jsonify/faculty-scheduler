@@ -1,3 +1,5 @@
+// components/forms/add-shift-form.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -9,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 
-type Teacher = {
+type Employee = {
   id: string;
   name: string;
   role: string;
@@ -18,7 +20,7 @@ type Teacher = {
 export function AddShiftForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [formData, setFormData] = useState({
     employeeId: "",
     date: new Date().toISOString().split('T')[0],
@@ -27,25 +29,25 @@ export function AddShiftForm() {
   });
 
   useEffect(() => {
-    async function fetchTeachers() {
+    async function fetchEmployees() {
       const { data, error } = await supabase
-        .from('teachers')
+        .from('employees')
         .select('*')
         .order('name');
       
       if (error) {
-        console.error('Error fetching teachers:', error);
+        console.error('Error fetching employees:', error);
         toast({
           title: "Error",
-          description: "Failed to load teachers",
+          description: "Failed to load employees",
           variant: "destructive",
         });
       } else if (data) {
-        setTeachers(data);
+        setEmployees(data);
       }
     }
 
-    fetchTeachers();
+    fetchEmployees();
   }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,32 +62,19 @@ export function AddShiftForm() {
       return;
     }
 
-    console.log('Submitting form data:', {
-      teacher_id: formData.employeeId,
-      date: formData.date,
-      start_time: formData.startTime,
-      end_time: formData.endTime,
-    });
-
     try {
-      const response = await fetch('/api/shifts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          employeeId: formData.employeeId,
+      const { data, error } = await supabase
+        .from('shifts')
+        .insert([{
+          employee_id: formData.employeeId,
           date: formData.date,
-          startTime: formData.startTime,
-          endTime: formData.endTime,
-        }),
-      });
+          start_time: formData.startTime,
+          end_time: formData.endTime,
+        }])
+        .select()
+        .single();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create shift');
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -112,15 +101,15 @@ export function AddShiftForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="employee">Teacher</Label>
+        <Label htmlFor="employee">Employee</Label>
         <Select onValueChange={(value) => setFormData({ ...formData, employeeId: value })} required>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select teacher" />
+            <SelectValue placeholder="Select employee" />
           </SelectTrigger>
           <SelectContent>
-            {teachers.map((teacher) => (
-              <SelectItem key={teacher.id} value={teacher.id}>
-                {teacher.name}
+            {employees.map((employee) => (
+              <SelectItem key={employee.id} value={employee.id}>
+                {employee.name} ({employee.role})
               </SelectItem>
             ))}
           </SelectContent>
