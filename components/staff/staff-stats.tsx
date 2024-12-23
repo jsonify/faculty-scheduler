@@ -2,22 +2,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useScheduleStore } from "@/lib/stores/schedule-store";
-import { BUSINESS_HOURS } from "@/lib/constants";
 
 export function StaffStats() {
   const { employees } = useScheduleStore();
   
   const totalStaff = employees.length;
-  const activeStaff = employees.filter(e => 
-    e.schedule.some(block => block.isActive)
-  ).length;
-  
-  const staffWithFullSchedule = employees.filter(e => {
-    const activeHours = e.schedule.filter(block => block.isActive).length;
-    return activeHours >= BUSINESS_HOURS.MIN_HOURS;
-  }).length;
-
-  const coveragePercentage = (staffWithFullSchedule / totalStaff) * 100;
+  const teacherCount = employees.filter(e => e.role === 'Teacher').length;
+  const paraCount = employees.filter(e => e.role === 'Para-Educator').length;
 
   return (
     <Card>
@@ -30,15 +21,12 @@ export function StaffStats() {
           <p className="text-2xl font-bold">{totalStaff}</p>
         </div>
         <div>
-          <p className="text-sm font-medium">Active Today</p>
-          <p className="text-2xl font-bold">{activeStaff}</p>
+          <p className="text-sm font-medium">Teachers</p>
+          <p className="text-2xl font-bold">{teacherCount}</p>
         </div>
         <div>
-          <p className="text-sm font-medium">Full Schedule Coverage</p>
-          <p className="text-2xl font-bold">{coveragePercentage.toFixed(1)}%</p>
-          <p className="text-sm text-muted-foreground">
-            {staffWithFullSchedule} teachers with {BUSINESS_HOURS.MIN_HOURS}+ hours
-          </p>
+          <p className="text-sm font-medium">Para-Educators</p>
+          <p className="text-2xl font-bold">{paraCount}</p>
         </div>
       </CardContent>
     </Card>

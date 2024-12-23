@@ -1,5 +1,6 @@
-import { redirect } from 'next/navigation';
+// app/dashboard/page.tsx
+import { DashboardPage } from '@/components/dashboard/dashboard-page';
 
-export default function Home() {
-  redirect('/dashboard');
+export default function Page() {
+  return <DashboardPage />;
 }
