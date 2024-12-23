@@ -1,0 +1,4 @@
+// public/test-imports/duplicate-names.csv
+name,role,schedule_type,default_start_time,default_end_time
+Duplicate Name,teacher,fixed,09:00,17:00
+Duplicate Name,para-educator,flexible,,

@@ -1,0 +1,5 @@
+// public/test-imports/invalid-times.csv
+name,role,schedule_type,default_start_time,default_end_time
+Invalid Time,teacher,fixed,25:00,17:00
+Wrong Format,teacher,fixed,9:00,17:00
+Reversed Times,teacher,fixed,17:00,09:00

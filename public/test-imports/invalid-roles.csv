@@ -1,0 +1,4 @@
+// public/test-imports/invalid-roles.csv
+name,role,schedule_type,default_start_time,default_end_time
+Bad Role,invalid-role,fixed,09:00,17:00
+Another Bad,principal,fixed,09:00,17:00

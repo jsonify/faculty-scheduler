@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "import-employees": "tsx scripts/import-employees.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -61,6 +62,7 @@
     "lucide-react": "^0.446.0",
     "next": "^13.5.7",
     "next-themes": "^0.3.0",
+    "papaparse": "^5.4.1",
     "postcss": "8.4.30",
     "react": "18.2.0",
     "react-day-picker": "^8.10.1",
@@ -80,6 +82,7 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.1.1",
+    "@types/papaparse": "^5.3.15",
     "sharp": "^0.33.5",
     "tsx": "^4.19.2"
   }

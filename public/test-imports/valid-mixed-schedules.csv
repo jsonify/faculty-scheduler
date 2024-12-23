@@ -1,0 +1,7 @@
+// public/test-imports/valid-mixed-schedules.csv
+name,role,schedule_type,default_start_time,default_end_time
+Emma Wilson,teacher,fixed,09:00,17:00
+Michael Chen,para-educator,flexible,,
+Sophie Martin,teacher,fixed,08:30,16:30
+Robert Taylor,para-educator,flexible,,
+Lisa Anderson,teacher,fixed,08:00,16:00
