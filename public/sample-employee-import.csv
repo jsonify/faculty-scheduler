@@ -1,7 +1,7 @@
 // public/sample-employee-import.csv
-name,role,schedule_type,default_start_time,default_end_time
-John Smith,teacher,fixed,09:00,17:00
-Maria Garcia,para-educator,flexible,,
-David Johnson,teacher,fixed,08:30,16:30
-Sarah Williams,para-educator,flexible,,
-James Brown,teacher,fixed,08:00,16:00
+name,role,schedule_type,default_start_time,default_end_time,mon_start,mon_end,tue_start,tue_end,wed_start,wed_end,thu_start,thu_end,fri_start,fri_end
+John Smith,teacher,fixed,09:00,16:00,09:00,16:00,09:00,16:00,09:00,16:00,09:00,16:00,09:00,16:00
+Maria Garcia,para-educator,flexible,08:00,16:00,08:00,16:00,08:00,16:00,10:00,17:00,08:00,16:00,08:00,16:00
+David Johnson,teacher,fixed,08:30,16:30,08:30,16:30,08:30,16:30,08:30,16:30,08:30,16:30,08:30,16:30
+Sarah Williams,para-educator,flexible,07:30,15:30,07:30,15:30,09:30,17:00,07:30,15:30,09:30,17:00,07:30,15:30
+James Brown,teacher,fixed,08:00,16:00,08:00,16:00,08:00,16:00,08:00,16:00,08:00,16:00,08:00,16:00

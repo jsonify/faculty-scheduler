@@ -23,8 +23,8 @@ async function importEmployees() {
     
     console.log('Processing import...');
     const result = await processEmployeeImport(fileContent, {
-      generateRandomSchedules: true,
-      skipDuplicates: true,
+      generateRandomSchedules: false,
+      skipDuplicates: false,
     });
 
     if (result.success) {

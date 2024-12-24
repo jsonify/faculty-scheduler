@@ -1,6 +1,99 @@
 // lib/utils/employee-import-validator.ts
 
 import { EmployeeImportRow, ImportValidationError } from '../types/employee-import';
+import { BUSINESS_HOURS } from '@/lib/constants';
+
+const TIME_REGEX = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'] as const;
+
+function validateTimeFormat(time: string): boolean {
+  return TIME_REGEX.test(time);
+}
+
+function validateTimeRange(start: string, end: string): boolean {
+  const startDate = new Date(`1970-01-01T${start}`);
+  const endDate = new Date(`1970-01-01T${end}`);
+  return startDate < endDate;
+}
+
+function validateBusinessHours(time: string, isEndTime: boolean = false): boolean {
+  const hour = parseInt(time.split(':')[0]);
+  if (isEndTime) {
+    return hour >= BUSINESS_HOURS.START && hour <= BUSINESS_HOURS.END;
+  }
+  return hour >= BUSINESS_HOURS.START && hour < BUSINESS_HOURS.END;
+}
+
+function validateDayAvailability(
+  row: EmployeeImportRow,
+  day: typeof DAYS[number],
+  errors: ImportValidationError[],
+  rowIndex: number
+): void {
+  const startKey = `${day}_start` as keyof EmployeeImportRow;
+  const endKey = `${day}_end` as keyof EmployeeImportRow;
+  const startTime = row[startKey];
+  const endTime = row[endKey];
+
+  if (typeof startTime !== 'string' || typeof endTime !== 'string') {
+    errors.push({
+      row: rowIndex,
+      field: `${day}_availability`,
+      message: `Missing ${day} availability times`,
+    });
+    return;
+  }
+
+  // Validate time format
+  if (!validateTimeFormat(startTime)) {
+    errors.push({
+      row: rowIndex,
+      field: startKey,
+      message: `Invalid ${day} start time format. Use HH:MM (24-hour)`,
+      value: startTime,
+    });
+  }
+
+  if (!validateTimeFormat(endTime)) {
+    errors.push({
+      row: rowIndex,
+      field: endKey,
+      message: `Invalid ${day} end time format. Use HH:MM (24-hour)`,
+      value: endTime,
+    });
+  }
+
+  // Validate time range
+  if (validateTimeFormat(startTime) && validateTimeFormat(endTime)) {
+    if (!validateTimeRange(startTime, endTime)) {
+      errors.push({
+        row: rowIndex,
+        field: `${day}_time_range`,
+        message: `${day} end time must be after start time`,
+        value: `${startTime} - ${endTime}`,
+      });
+    }
+
+    // Validate business hours
+    if (!validateBusinessHours(startTime)) {
+      errors.push({
+        row: rowIndex,
+        field: startKey,
+        message: `${day} start time must be within business hours (${BUSINESS_HOURS.START}:00-${BUSINESS_HOURS.END}:00)`,
+        value: startTime,
+      });
+    }
+
+    if (!validateBusinessHours(endTime, true)) {
+      errors.push({
+        row: rowIndex,
+        field: endKey,
+        message: `${day} end time must be within business hours (${BUSINESS_HOURS.START}:00-${BUSINESS_HOURS.END}:00)`,
+        value: endTime,
+      });
+    }
+  }
+}
 
 export function validateEmployeeRow(
   row: any,
@@ -8,7 +101,7 @@ export function validateEmployeeRow(
 ): ImportValidationError[] {
   const errors: ImportValidationError[] = [];
 
-  // Validate name
+  // Validate basic employee information
   if (!row.name || typeof row.name !== 'string' || row.name.trim().length === 0) {
     errors.push({
       row: rowIndex,
@@ -18,17 +111,15 @@ export function validateEmployeeRow(
     });
   }
 
-  // Validate role
-  if (!['teacher', 'para-educator'].includes(row.role)) {
+  if (!['teacher', 'para-educator', 'admin'].includes(row.role)) {
     errors.push({
       row: rowIndex,
       field: 'role',
-      message: 'Role must be either "teacher" or "para-educator"',
+      message: 'Role must be either "teacher", "para-educator", or "admin"',
       value: row.role,
     });
   }
 
-  // Validate schedule_type
   if (!['fixed', 'flexible'].includes(row.schedule_type)) {
     errors.push({
       row: rowIndex,
@@ -38,50 +129,47 @@ export function validateEmployeeRow(
     });
   }
 
-  // Validate time format if schedule_type is fixed
+  // Validate default schedule times if fixed schedule
   if (row.schedule_type === 'fixed') {
-    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
-    
-    if (!timeRegex.test(row.default_start_time)) {
+    if (!validateTimeFormat(row.default_start_time)) {
       errors.push({
         row: rowIndex,
         field: 'default_start_time',
-        message: 'Invalid start time format. Use HH:MM (24-hour)',
+        message: 'Invalid default start time format. Use HH:MM (24-hour)',
         value: row.default_start_time,
       });
     }
 
-    if (!timeRegex.test(row.default_end_time)) {
+    if (!validateTimeFormat(row.default_end_time)) {
       errors.push({
         row: rowIndex,
         field: 'default_end_time',
-        message: 'Invalid end time format. Use HH:MM (24-hour)',
+        message: 'Invalid default end time format. Use HH:MM (24-hour)',
         value: row.default_end_time,
       });
     }
 
-    // Validate time range
-    if (row.default_start_time && row.default_end_time) {
-      const start = new Date(`1970-01-01T${row.default_start_time}`);
-      const end = new Date(`1970-01-01T${row.default_end_time}`);
-      
-      if (start >= end) {
+    if (validateTimeFormat(row.default_start_time) && validateTimeFormat(row.default_end_time)) {
+      if (!validateTimeRange(row.default_start_time, row.default_end_time)) {
         errors.push({
           row: rowIndex,
           field: 'default_time_range',
-          message: 'End time must be after start time',
+          message: 'Default end time must be after start time',
           value: `${row.default_start_time} - ${row.default_end_time}`,
         });
       }
     }
   }
 
+  // Validate daily availability
+  DAYS.forEach(day => {
+    validateDayAvailability(row, day, errors, rowIndex);
+  });
+
   return errors;
 }
 
-export function validateEmployeeData(
-  data: any[]
-): ImportValidationError[] {
+export function validateEmployeeData(data: any[]): ImportValidationError[] {
   let errors: ImportValidationError[] = [];
   
   // Check for duplicate names
