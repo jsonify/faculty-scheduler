@@ -42,28 +42,24 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   fetchEmployees: async (options = {}) => {
     set({ loading: true, error: null });
     try {
-      // Build dynamic query
+      // Simplified query without relationships for now
       let query = supabase
         .from('employees')
-        .select(`
-          *,
-          shifts(*),
-          schedules(*)
-        `)
+        .select('*')
         .order('name');
-
+  
       // Apply role filter if specified
       if (options.role) {
         query = query.eq('role', options.role);
       }
-
+  
       // Apply active status filter if specified
       if (options.activeOnly !== undefined) {
         query = query.eq('is_active', options.activeOnly);
       }
-
+  
       const { data, error } = await query;
-
+  
       if (error) throw error;
       set({ employees: data || [], loading: false });
     } catch (error) {

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useScheduleStore } from "@/lib/stores/schedule-store";
 
 interface AddEmployeeFormProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ export function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
   const [isFlexible, setIsFlexible] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
+  const { fetchEmployees } = useScheduleStore();
   const [availability, setAvailability] = useState([
     { dayOfWeek: 1, enabled: false, startTime: '09:00', endTime: '15:00' },
     { dayOfWeek: 2, enabled: false, startTime: '09:00', endTime: '15:00' },
@@ -29,7 +31,7 @@ export function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     try {
       const response = await fetch('/api/employees', {
         method: 'POST',
@@ -43,10 +45,11 @@ export function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
           availability: isFlexible ? availability : null
         })
       });
-
+  
       if (!response.ok) throw new Error('Failed to create employee');
-
+  
       toast({ title: "Success", description: "Employee added successfully" });
+      await fetchEmployees(); // Add this line
       router.refresh();
       onClose();
     } catch (error) {
