@@ -2,16 +2,16 @@
 
 import { create } from 'zustand';
 import { format } from 'date-fns';
-import { Employee } from '@/types/schedule';
+import { Employee, EmployeeRole } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 
 interface Assignment {
   id: string;
-  employeeId: string;
-  studentId: string;
+  employee_id: string;
+  student_id: string;
   date: string;
-  startTime: string;
-  endTime: string;
+  start_time: string;
+  end_time: string;
 }
 
 interface ScheduleState {
@@ -19,31 +19,60 @@ interface ScheduleState {
   loading: boolean;
   error: string | null;
   assignments: Assignment[];
-  fetchEmployees: () => Promise<void>;
+  fetchEmployees: (options?: {
+    role?: EmployeeRole, 
+    activeOnly?: boolean
+  }) => Promise<void>;
   fetchAssignments: (date: Date) => Promise<void>;
   createAssignment: (assignment: Omit<Assignment, 'id'>) => Promise<void>;
   updateAssignment: (id: string, updates: Partial<Assignment>) => Promise<void>;
   deleteAssignment: (id: string) => Promise<void>;
+  updateEmployeeStatus: (
+    employeeId: string, 
+    updates: Partial<Pick<Employee, 'is_active' | 'role'>>
+  ) => Promise<void>;
 }
 
-export const useScheduleStore = create<ScheduleState>((set) => ({
+export const useScheduleStore = create<ScheduleState>((set, get) => ({
   employees: [],
   loading: false,
   error: null,
   assignments: [],
 
-  fetchEmployees: async () => {
+  fetchEmployees: async (options = {}) => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
+      // Build dynamic query
+      let query = supabase
         .from('employees')
-        .select('*')
+        .select(`
+          *,
+          shifts(*),
+          schedules(*)
+        `)
         .order('name');
+
+      // Apply role filter if specified
+      if (options.role) {
+        query = query.eq('role', options.role);
+      }
+
+      // Apply active status filter if specified
+      if (options.activeOnly !== undefined) {
+        query = query.eq('is_active', options.activeOnly);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       set({ employees: data || [], loading: false });
     } catch (error) {
-      set({ error: 'Failed to fetch employees', loading: false });
+      set({ 
+        error: error instanceof Error 
+          ? error.message 
+          : 'Failed to fetch employees', 
+        loading: false 
+      });
     }
   },
   
@@ -109,6 +138,35 @@ export const useScheduleStore = create<ScheduleState>((set) => ({
       }));
     } catch (error) {
       set({ error: 'Failed to delete assignment' });
+    }
+  },
+
+  updateEmployeeStatus: async (employeeId, updates): Promise<void> => {
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .update(updates)
+        .eq('id', employeeId)
+        .select();
+
+      if (error) throw error;
+
+      // Update local state
+      set(state => ({
+        employees: state.employees.map(employee => 
+          employee.id === employeeId 
+            ? { ...employee, ...updates } 
+            : employee
+        )
+      }));
+
+      // No need to return data as the function should return void
+    } catch (error) {
+      set({ 
+        error: error instanceof Error 
+          ? error.message 
+          : 'Failed to update employee status' 
+      });
     }
   }
 }));
