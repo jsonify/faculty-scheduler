@@ -19,6 +19,7 @@ export function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
   const { toast } = useToast();
   const [isFlexible, setIsFlexible] = useState(false);
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
   const { fetchEmployees } = useScheduleStore();
   const [availability, setAvailability] = useState([
@@ -38,6 +39,7 @@ export function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
+          email,
           role,
           scheduleType: isFlexible ? 'flexible' : 'fixed',
           defaultStartTime: isFlexible ? null : '08:00',
@@ -73,7 +75,15 @@ export function AddEmployeeForm({ onClose }: AddEmployeeFormProps) {
             onChange={(e) => setName(e.target.value)}
           />
         </div>
-        
+        <div>
+          <Label>Email</Label>
+          <Input 
+            type="email"
+            required 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
         <div>
           <Label>Role</Label>
           <Select value={role} onValueChange={setRole} required>

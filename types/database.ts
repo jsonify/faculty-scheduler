@@ -5,6 +5,7 @@ export type EmployeeRole = 'teacher' | 'para-educator' | 'admin';
 export interface Employee {
   id: string;
   name: string;
+  email: string; // Add email field
   role: EmployeeRole;
   is_active: boolean;
   archived_at?: string;
