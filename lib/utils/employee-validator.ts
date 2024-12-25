@@ -36,8 +36,8 @@ function parseBoolean(value: any): boolean {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') {
     const lowered = value.toLowerCase();
-    if (['true', '1', 'yes'].includes(lowered)) return true;
-    if (['false', '0', 'no'].includes(lowered)) return false;
+    if (['true', 't', '1', 'yes', 'y'].includes(lowered)) return true;
+    if (['false', 'f', '0', 'no', 'n'].includes(lowered)) return false;
   }
   if (typeof value === 'number') return value === 1;
   return false;
@@ -196,6 +196,10 @@ export function validateEmployeeData(data: any[]): ValidationResult {
     // Availability validation
     ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach(day => {
       const value = row[day];
+      // Parse and normalize boolean value
+      const parsedValue = parseBoolean(value);
+      row[day] = parsedValue; // Update the row with normalized value
+     
       if (value === undefined || value === '') {
         errors.push({
           row: index,
@@ -204,7 +208,7 @@ export function validateEmployeeData(data: any[]): ValidationResult {
           value: value
         });
       }
-    });
+     });
   });
 
   return {

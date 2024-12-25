@@ -11,6 +11,7 @@ import { ImportProgress } from "./import-progress";
 import { ImportErrors } from "./import-errors";
 import Papa from "papaparse";
 import { validateEmployeeData } from "@/lib/utils/employee-validator";
+import { EmployeeImportRow } from "@/lib/types/employee-import";
 import { downloadTemplate } from '@/lib/utils/csv-export';
 
 type ImportState = "idle" | "preview" | "importing" | "complete" | "error";
@@ -79,9 +80,33 @@ export function EmployeeImport() {
     }
   };
 
-  const processEmployeeRow = async (row: any) => {
-    // Implementation of actual employee creation
-    // This would call your API endpoint to create the employee
+  const processEmployeeRow = async (row: EmployeeImportRow) => {
+    const response = await fetch('/api/employees', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: row.name,
+        role: row.role,
+        scheduleType: row.schedule_type,
+        defaultStartTime: row.start_time,
+        defaultEndTime: row.end_time,
+        availability: [
+          { dayOfWeek: 1, enabled: row.monday, startTime: row.start_time, endTime: row.end_time },
+          { dayOfWeek: 2, enabled: row.tuesday, startTime: row.start_time, endTime: row.end_time },
+          { dayOfWeek: 3, enabled: row.wednesday, startTime: row.start_time, endTime: row.end_time },
+          { dayOfWeek: 4, enabled: row.thursday, startTime: row.start_time, endTime: row.end_time },
+          { dayOfWeek: 5, enabled: row.friday, startTime: row.start_time, endTime: row.end_time }
+        ]
+      })
+    });
+  
+    if (!response.ok) {
+      throw new Error('Failed to create employee');
+    }
+  
+    return await response.json();
   };
 
   return (
