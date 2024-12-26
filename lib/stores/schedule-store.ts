@@ -81,18 +81,24 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
      console.log(`Found ${availabilities?.length || 0} availability records`);
 
      // Fetch any temporary schedules for this date with employee details
-     const { data: tempSchedules, error: tempError } = await supabase
-       .from('temporary_schedules')
-       .select(`
-         *,
-         employee:employee_id (id, name, role)
-       `)
-       .eq('date', dateStr)
-       .order('hour', { ascending: true });
+     let tempSchedules = [];
+     try {
+       const { data, error } = await supabase
+         .from('temporary_schedules')
+         .select(`
+           *,
+           employee:employee_id (id, name, role)
+         `)
+         .eq('date', dateStr)
+         .order('hour', { ascending: true });
 
-     if (tempError) {
-       console.error('Error fetching temporary schedules:', tempError);
-       throw tempError;
+       if (error) {
+         console.warn('Error fetching temporary schedules:', error);
+       } else {
+         tempSchedules = data || [];
+       }
+     } catch (error) {
+       console.warn('Error fetching temporary schedules:', error);
      }
 
      console.log(`Found ${tempSchedules?.length || 0} temporary schedules`);
