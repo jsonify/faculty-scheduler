@@ -24,6 +24,14 @@ export function DaySchedule({ date, employees }: DayScheduleProps) {
     fetchEmployees();
   }, [fetchEmployees]);
 
+  // Add warning if no schedules are found
+  useEffect(() => {
+    const hasNoSchedules = storeEmployees.every(emp => !emp.schedules?.length);
+    if (hasNoSchedules && storeEmployees.length > 0) {
+      console.warn('No schedules found for any employees. This may be due to missing permissions.');
+    }
+  }, [storeEmployees]);
+
   const hours = Array.from(
     { length: BUSINESS_HOURS.END - BUSINESS_HOURS.START },
     (_, i) => BUSINESS_HOURS.START + i

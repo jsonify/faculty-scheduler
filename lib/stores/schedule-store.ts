@@ -88,41 +88,33 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         return;
       }
       
-      console.log('Fetching schedules for employee IDs:', employeeIds);
+      console.log('Attempting to fetch schedules for employee IDs:', employeeIds);
       const { data: schedules, error } = await supabase
         .from('employee_schedules')
         .select('*')
         .in('employee_id', employeeIds);
 
+      let fetchedSchedules: any[] = [];
+
       if (error) {
-        console.error('Supabase error details:', {
-          error,
-          status: error.status,
-          message: error.message,
-          details: error.details
-        });
-        
-        // Handle RLS permission error specifically
         if (error.message?.includes('permission denied')) {
-          console.warn('Permission denied - This is likely due to Row Level Security (RLS) policies.');
-          // Return empty schedules instead of throwing
-          return [];
+          console.warn('⚠️ Permission denied accessing employee_schedules table.');
+          console.info('This is likely due to Row Level Security (RLS) policies not being configured correctly.');
+          console.info('Continuing with empty schedules to prevent app crash...');
+          // Return empty array instead of throwing
+          fetchedSchedules = [];
+        } else {
+          console.error('Error fetching schedules:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          });
+          throw error;
         }
-        
-        throw error;
+      } else {
+        fetchedSchedules = schedules || [];
+        console.log(`Successfully fetched ${fetchedSchedules.length} schedule records`);
       }
-
-      if (!schedules) {
-        console.log('No schedules found');
-        return [];
-      }
-
-      return schedules;
-      
-      console.log('Received schedules:', schedules);
-
-      // Get schedules and handle potential RLS issues
-      const fetchedSchedules = await schedules;
       
       // Update employees with their schedules
       const updatedEmployees = employees.map(emp => ({
