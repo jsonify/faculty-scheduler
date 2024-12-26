@@ -58,6 +58,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
     loading,
     availabilities,
     fetchEmployees,
+    fetchAvailability,
     initializeTimeBlocks,
     moveTimeBlock,
     addBreak,
