@@ -44,10 +44,11 @@ function getAvailabilityText(employeeId: string, availabilities: EmployeeAvailab
     ranges.push(currentRange);
   }
   
-  // Format ranges
-  return ranges.map(range => 
-    `${format(new Date(0, 0, 0, range.start), 'h a')} - ${format(new Date(0, 0, 0, range.end), 'h a')}`
-  ).join(', ');
+  // Format ranges, ensuring both start and end are numbers
+  return ranges.map(range => {
+    if (range.start === null || range.end === null) return '';
+    return `${format(new Date(0, 0, 0, range.start), 'h a')} - ${format(new Date(0, 0, 0, range.end), 'h a')}`;
+  }).filter(Boolean).join(', ');
 }
 
 export function DaySchedule({ date }: DayScheduleProps) {
