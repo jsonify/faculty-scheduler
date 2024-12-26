@@ -10,7 +10,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false, // Since we're using the anon key
+    autoRefreshToken: false,
+  },
+  db: {
+    schema: 'public'
+  }
+});
 
 // Employee schedule utility functions
 export async function generateSchedulesForEmployee(employee_id: string) {

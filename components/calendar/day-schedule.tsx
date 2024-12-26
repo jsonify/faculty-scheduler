@@ -17,12 +17,19 @@ interface DayScheduleProps {
 }
 
 export function DaySchedule({ date, employees }: DayScheduleProps) {
-  const { employees: storeEmployees, updateScheduleBlock, fetchEmployees } = useScheduleStore();
+  const { 
+    employees: storeEmployees, 
+    updateScheduleBlock, 
+    fetchEmployees,
+    initialized,
+  } = useScheduleStore();
   const [loading, setLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
+    if (!initialized) {
+      fetchEmployees();
+    }
+  }, [initialized, fetchEmployees]);
 
   // Add warning if no schedules are found
   useEffect(() => {

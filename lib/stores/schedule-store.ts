@@ -3,8 +3,7 @@
 import { create } from 'zustand';
 import { format } from 'date-fns';
 import { Employee } from '@/types/database';
-import { supabase, generateSchedulesForEmployee, getEmployeeSchedules, batchUpdateSchedules } from '@/lib/supabase';
-import { BUSINESS_HOURS } from '@/lib/constants';
+import { supabase } from '@/lib/supabase';
 
 interface ScheduleCache {
   [key: string]: {
@@ -18,15 +17,12 @@ interface ScheduleState {
   loading: boolean;
   error: string | null;
   cache: ScheduleCache;
+  initialized: boolean;
   
-  // Enhanced fetch operations
   fetchEmployees: () => Promise<void>;
-  fetchEmployeeSchedules: (date: Date) => Promise<void>;
-  generateScheduleFromAvailability: (employeeId: string) => Promise<void>;
+  fetchEmployeeSchedules: (employeeIds: string[]) => Promise<void>;
   updateScheduleBlock: (employeeId: string, hour: number, isActive: boolean) => Promise<void>;
   batchUpdateSchedules: (updates: Array<{ employeeId: string, hour: number, isActive: boolean }>) => Promise<void>;
-  
-  // Cache operations
   clearCache: () => void;
 }
 
@@ -37,122 +33,109 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   loading: false,
   error: null,
   cache: {},
+  initialized: false,
 
   fetchEmployees: async () => {
+    if (get().initialized) return;
+
     set({ loading: true, error: null });
     try {
-      console.log('Fetching employees...');
       const { data: employees, error: employeesError } = await supabase
         .from('employees')
         .select('*')
         .order('name');
 
-      if (employeesError) {
-        console.error('Error fetching employees:', employeesError);
-        throw employeesError;
-      }
-
       if (employeesError) throw employeesError;
-      set({ employees: employees || [], loading: false });
-      
-      // Fetch schedules for the current date after getting employees
+
+      set({ 
+        employees: employees || [], 
+        initialized: true,
+        loading: false 
+      });
+
+      // Fetch schedules only if we have employees
       if (employees?.length) {
-        await get().fetchEmployeeSchedules(new Date());
+        await get().fetchEmployeeSchedules(employees.map(e => e.id));
       }
     } catch (error) {
       set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch employees', 
+        error: error instanceof Error ? error.message : 'Failed to fetch employees',
         loading: false 
       });
     }
   },
 
-  fetchEmployeeSchedules: async (date: Date) => {
-    set({ loading: true, error: null });
-    const dateKey = format(date, 'yyyy-MM-dd');
-    const cachedData = get().cache[dateKey];
+  fetchEmployeeSchedules: async (employeeIds: string[]) => {
+    if (!employeeIds.length) return;
+
+    set({ loading: true });
     
-    // Check cache validity
-    if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_DURATION) {
-      set({ employees: cachedData.data, loading: false });
-      return;
-    }
-  
     try {
-      const employees = get().employees;
-      const employeeIds = employees.map(emp => emp.id);
-  
-      // Add this check
-      if (employeeIds.length === 0) {
-        set({ loading: false });
-        return;
-      }
-      
-      console.log('Attempting to fetch schedules for employee IDs:', employeeIds);
+      // First try to fetch all schedules at once
       const { data: schedules, error } = await supabase
         .from('employee_schedules')
         .select('*')
         .in('employee_id', employeeIds);
 
-      let fetchedSchedules: any[] = [];
-
       if (error) {
-        if (error.message?.includes('permission denied')) {
-          console.warn('⚠️ Permission denied accessing employee_schedules table.');
-          console.info('This is likely due to Row Level Security (RLS) policies not being configured correctly.');
-          console.info('Continuing with empty schedules to prevent app crash...');
-          // Return empty array instead of throwing
-          fetchedSchedules = [];
-        } else {
-          console.error('Error fetching schedules:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint
-          });
-          throw error;
-        }
-      } else {
-        fetchedSchedules = schedules || [];
-        console.log(`Successfully fetched ${fetchedSchedules.length} schedule records`);
+        console.log('Schedule fetch error:', error);
+        // If bulk fetch fails, try fetching one by one
+        console.warn('Bulk fetch failed, trying individual fetches');
+        const individualSchedules = await Promise.all(
+          employeeIds.map(async (id) => {
+            const { data } = await supabase
+              .from('employee_schedules')
+              .select('*')
+              .eq('employee_id', id);
+            return data || [];
+          })
+        );
+
+        // Combine all the individual results
+        const combinedSchedules = individualSchedules.flat();
+        
+        // Update employees with their schedules
+        const updatedEmployees = get().employees.map(emp => ({
+          ...emp,
+          schedules: combinedSchedules.filter(s => s.employee_id === emp.id)
+        }));
+
+        set({ 
+          employees: updatedEmployees,
+          loading: false,
+          cache: {
+            ...get().cache,
+            [format(new Date(), 'yyyy-MM-dd')]: {
+              timestamp: Date.now(),
+              data: updatedEmployees
+            }
+          }
+        });
+        return;
       }
-      
-      // Update employees with their schedules
-      const updatedEmployees = employees.map(emp => ({
+
+      // If bulk fetch succeeded, update state
+      const updatedEmployees = get().employees.map(emp => ({
         ...emp,
-        schedules: (fetchedSchedules || []).filter(s => s.employee_id === emp.id)
+        schedules: (schedules || []).filter(s => s.employee_id === emp.id)
       }));
 
-      // Update state and cache
       set({ 
-        employees: updatedEmployees, 
+        employees: updatedEmployees,
         loading: false,
         cache: {
           ...get().cache,
-          [dateKey]: {
+          [format(new Date(), 'yyyy-MM-dd')]: {
             timestamp: Date.now(),
             data: updatedEmployees
           }
         }
       });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch schedules',
-        loading: false 
-      });
-    }
-  },
 
-  generateScheduleFromAvailability: async (employeeId: string) => {
-    set({ loading: true, error: null });
-    try {
-      const { error } = await generateSchedulesForEmployee(employeeId);
-      if (error) throw error;
-      
-      // Refresh schedules after generation
-      await get().fetchEmployeeSchedules(new Date());
     } catch (error) {
+      console.error('Error fetching schedules:', error);
       set({ 
-        error: error instanceof Error ? error.message : 'Failed to generate schedule',
+        error: 'Failed to fetch schedules',
         loading: false 
       });
     }
@@ -177,8 +160,6 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         console.error('Error updating schedule:', error);
         throw error;
       }
-  
-      if (error) throw error;
   
       // Update local state
       const employees = get().employees.map(emp => {
@@ -218,11 +199,16 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         is_active: update.isActive
       }));
 
-      const { error } = await batchUpdateSchedules(formattedUpdates);
+      const { error } = await supabase
+        .from('employee_schedules')
+        .upsert(formattedUpdates);
+
       if (error) throw error;
 
       // Refresh schedules after batch update
-      await get().fetchEmployeeSchedules(new Date());
+      await get().fetchEmployeeSchedules(
+        get().employees.map(e => e.id)
+      );
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to update schedules'
