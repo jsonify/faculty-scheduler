@@ -82,12 +82,18 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         return;
       }
       
+      console.log('Fetching schedules for employee IDs:', employeeIds);
       const { data: schedules, error } = await supabase
         .from('employee_schedules')
         .select('*')
         .in('employee_id', employeeIds);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
+      
+      console.log('Received schedules:', schedules);
 
       // Update employees with their schedules
       const updatedEmployees = employees.map(emp => ({
