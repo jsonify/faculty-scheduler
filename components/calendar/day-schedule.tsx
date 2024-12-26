@@ -79,6 +79,8 @@ export function DaySchedule({ date }: DayScheduleProps) {
       try {
         console.log('Fetching employees...');
         await fetchEmployees();
+        console.log('Fetching availability...');
+        await fetchAvailability(date);
         console.log('Initializing time blocks...');
         await initializeTimeBlocks(date);
       } catch (error) {
@@ -87,7 +89,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
     };
     
     initializeData();
-  }, [date, fetchEmployees, initializeTimeBlocks]);
+  }, [date, fetchEmployees, initializeTimeBlocks, fetchAvailability]);
 
   const availableEmployees = useMemo(() => {
     return employees.filter(employee => {
@@ -102,12 +104,15 @@ export function DaySchedule({ date }: DayScheduleProps) {
     const end = 16 * 60; // 4:00 PM in minutes
     const interval = 15; // 15 minute intervals
     
-    return Array.from({ length: (end - start) / interval }, (_, i) => {
+    const slots = Array.from({ length: (end - start) / interval }, (_, i) => {
       const minutes = start + i * interval;
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
       return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
     });
+
+    console.log('Generated time slots:', slots);
+    return slots;
   }, []);
 
   const [draggingBlock, setDraggingBlock] = useState<{startHour: number, duration: number} | null>(null);
