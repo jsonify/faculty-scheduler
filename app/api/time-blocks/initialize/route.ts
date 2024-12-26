@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { NextResponse } from 'next/server';
 import { Employee } from '@/types/database';
 
 export async function POST(request: Request) {
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
     }
 
     // Fetch active employees
-    const { data: employees, error: employeeError } = await supabase
+    const { data: employees, error: employeeError } = await supabaseAdmin
       .from('employees')
       .select('*')
       .eq('is_active', true);
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     const dayOfWeek = new Date(date).getDay();
 
     // Fetch availability for this day
-    const { data: availabilities, error: availError } = await supabase
+    const { data: availabilities, error: availError } = await supabaseAdmin
       .from('employee_availability')
       .select('*')
       .eq('day_of_week', dayOfWeek);
