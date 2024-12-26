@@ -187,10 +187,11 @@ function ScheduleCell({
  
 //  console.log(`Availability for employee ${employeeId}:`, employeeAvailability);
  
- const isAvailable = employeeAvailability.some(a => 
-   parseInt(a.start_time.split(':')[0]) <= hour &&
-   parseInt(a.end_time.split(':')[0]) > hour
- );
+ const isAvailable = employeeAvailability.some(a => {
+   const startHour = parseInt(a.start_time.split(':')[0]);
+   const endHour = parseInt(a.end_time.split(':')[0]);
+   return hour >= startHour && hour < endHour;
+ });
 
  const tempSchedule = temporarySchedules.find(t =>
    t.employee_id === employeeId && t.hour === hour
@@ -211,8 +212,8 @@ function ScheduleCell({
      className={cn(
        "p-1 border",
        isOver && "bg-muted",
-       isAvailable && "bg-primary/10",
-       tempSchedule?.is_active && "bg-primary/30"
+       isAvailable && "bg-green-100",
+       tempSchedule?.is_active && "bg-blue-100"
      )}
    >
      {isAvailable && (
