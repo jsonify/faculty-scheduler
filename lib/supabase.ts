@@ -24,12 +24,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'Authorization': `Bearer ${supabaseAnonKey}`,
       'Content-Type': 'application/json',
       'Prefer': 'return=representation'
-    },
-    query: {
-      // Ensure API key is sent as URL parameter for all requests
-      params: {
-        apikey: supabaseAnonKey
-      }
     }
   }
 });
