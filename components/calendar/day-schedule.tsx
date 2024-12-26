@@ -185,7 +185,7 @@ function ScheduleCell({
    a.employee_id === employeeId
  );
  
- console.log(`Availability for employee ${employeeId}:`, employeeAvailability);
+//  console.log(`Availability for employee ${employeeId}:`, employeeAvailability);
  
  const isAvailable = employeeAvailability.some(a => 
    parseInt(a.start_time.split(':')[0]) <= hour &&
