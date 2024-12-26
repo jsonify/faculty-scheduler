@@ -72,8 +72,18 @@ export function DaySchedule({ date }: DayScheduleProps) {
   );
 
   useEffect(() => {
-    fetchEmployees();
-    fetchAvailability(date);
+    const fetchData = async () => {
+      try {
+        console.log('Fetching employees...');
+        await fetchEmployees();
+        console.log('Fetching availability...');
+        await fetchAvailability(date);
+      } catch (error) {
+        console.error('Error fetching schedule data:', error);
+      }
+    };
+    
+    fetchData();
   }, [date, fetchEmployees, fetchAvailability]);
 
   const hours = useMemo(() => {
@@ -86,7 +96,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
     return <Card className="p-4">Loading...</Card>;
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
 
@@ -95,12 +105,24 @@ export function DaySchedule({ date }: DayScheduleProps) {
 
     if (employeeId !== targetEmployeeId) return;
 
-    updateTemporarySchedule(
-      targetEmployeeId,
-      date.toISOString().split('T')[0],
-      parseInt(targetHour),
-      true
-    );
+    try {
+      console.log('Updating temporary schedule for:', {
+        employeeId: targetEmployeeId,
+        date: date.toISOString().split('T')[0],
+        hour: parseInt(targetHour)
+      });
+      
+      await updateTemporarySchedule(
+        targetEmployeeId,
+        date.toISOString().split('T')[0],
+        parseInt(targetHour),
+        true
+      );
+      
+      console.log('Temporary schedule updated successfully');
+    } catch (error) {
+      console.error('Error updating temporary schedule:', error);
+    }
   };
 
   return (
