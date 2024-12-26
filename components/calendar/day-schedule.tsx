@@ -41,7 +41,11 @@ export function DaySchedule({ date }: DayScheduleProps) {
     fetchAvailability(date);
   }, [date, fetchEmployees, fetchAvailability]);
 
-  const hours = useMemo(() => Array.from(Array(HOUR_BLOCKS).keys()), []);
+  const hours = useMemo(() => {
+    const BUSINESS_HOURS = { start: 8, end: 17 }; // 8am to 5pm
+    return Array.from({ length: BUSINESS_HOURS.end - BUSINESS_HOURS.start }, 
+      (_, i) => BUSINESS_HOURS.start + i);
+  }, []);
 
   if (loading) {
     return <Card className="p-4">Loading...</Card>;
@@ -98,9 +102,9 @@ export function DaySchedule({ date }: DayScheduleProps) {
                <tr key={hour}>
                  <td className="p-2 font-medium border-r bg-muted/50">
                    <div className="flex items-center justify-between">
-                     <span>{format(new Date().setHours(hour), 'h:mm a')}</span>
+                     <span>{format(new Date(0, 0, 0, hour), 'h:mm a')}</span>
                      <span className="text-muted-foreground text-xs">
-                       {format(new Date().setHours(hour), 'HH:mm')}
+                       {format(new Date(0, 0, 0, hour), 'HH:mm')}
                      </span>
                    </div>
                  </td>
