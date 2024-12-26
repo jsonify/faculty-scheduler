@@ -44,7 +44,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       const { data: employees, error: employeesError } = await supabase
         .from('employees')
         .select('*')
-        .order('name');
+        .order('name')
+        .throwOnError();  // This will help with debugging
 
       if (employeesError) throw employeesError;
       set({ employees: employees || [], loading: false });
@@ -86,7 +87,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       const { data: schedules, error } = await supabase
         .from('employee_schedules')
         .select('*')
-        .in('employee_id', employeeIds);
+        .in('employee_id', employeeIds)
+        .throwOnError();  // This will help with debugging
       
       if (error) {
         console.error('Supabase error details:', error);
@@ -145,9 +147,12 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
           employee_id: employeeId,
           hour,
           is_active: isActive
+        }, {
+          onConflict: 'employee_id,hour'  // Specify the conflict resolution
         })
         .select()
-        .single();
+        .single()
+        .throwOnError();  // This will help with debugging
   
       if (error) throw error;
   
