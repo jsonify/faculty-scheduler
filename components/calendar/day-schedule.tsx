@@ -54,12 +54,14 @@ function getAvailabilityText(employeeId: string, availabilities: EmployeeAvailab
 export function DaySchedule({ date }: DayScheduleProps) {
   const { 
     employees,
-    availabilities, 
-    temporarySchedules,
+    timeBlocks,
     loading,
     fetchEmployees,
-    fetchAvailability,
-    updateTemporarySchedule 
+    initializeTimeBlocks,
+    moveTimeBlock,
+    addBreak,
+    addLunch,
+    removeTimeBlock
   } = useScheduleStore();
 
   const sensors = useSensors(
@@ -72,19 +74,19 @@ export function DaySchedule({ date }: DayScheduleProps) {
   );
 
   useEffect(() => {
-    const fetchData = async () => {
+    const initializeData = async () => {
       try {
         console.log('Fetching employees...');
         await fetchEmployees();
-        console.log('Fetching availability...');
-        await fetchAvailability(date);
+        console.log('Initializing time blocks...');
+        await initializeTimeBlocks(date);
       } catch (error) {
-        console.error('Error fetching schedule data:', error);
+        console.error('Error initializing schedule data:', error);
       }
     };
     
-    fetchData();
-  }, [date, fetchEmployees, fetchAvailability]);
+    initializeData();
+  }, [date, fetchEmployees, initializeTimeBlocks]);
 
   const availableEmployees = useMemo(() => {
     return employees.filter(employee => {
@@ -94,10 +96,17 @@ export function DaySchedule({ date }: DayScheduleProps) {
     });
   }, [employees, availabilities]);
 
-  const hours = useMemo(() => {
-    const BUSINESS_HOURS = { start: 8, end: 17 }; // 8am to 5pm
-    return Array.from({ length: BUSINESS_HOURS.end - BUSINESS_HOURS.start }, 
-      (_, i) => BUSINESS_HOURS.start + i);
+  const timeSlots = useMemo(() => {
+    const start = 9 * 60; // 9:00 AM in minutes
+    const end = 16 * 60; // 4:00 PM in minutes
+    const interval = 15; // 15 minute intervals
+    
+    return Array.from({ length: (end - start) / interval }, (_, i) => {
+      const minutes = start + i * interval;
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    });
   }, []);
 
   const [draggingBlock, setDraggingBlock] = useState<{startHour: number, duration: number} | null>(null);
@@ -107,65 +116,38 @@ export function DaySchedule({ date }: DayScheduleProps) {
   }
 
   const handleDragStart = (event: any) => {
-    const [employeeId, startHourStr] = event.active.id.toString().split('-');
-    const startHour = parseInt(startHourStr, 10);
-    
-    if (isNaN(startHour)) {
-      console.error('Invalid start hour:', startHourStr);
-      return;
+    const blockId = event.active.id;
+    const block = timeBlocks.find(b => b.id === blockId);
+    if (block) {
+      setDraggingBlock({
+        id: blockId,
+        startTime: block.startTime,
+        endTime: block.endTime
+      });
     }
-
-    // Check if there are consecutive active hours to determine block size
-    let duration = 1;
-    if (temporarySchedules) {
-      while (temporarySchedules.some(t => 
-        t.employee_id === employeeId && 
-        t.hour === startHour + duration &&
-        t.is_active
-      )) {
-        duration++;
-      }
-    }
-    setDraggingBlock({startHour, duration});
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || !draggingBlock) return;
 
-    const [employeeId, currentHourStr] = active.id.toString().split('-');
-    const [targetEmployeeId, targetHourStr] = over.id.toString().split('-');
-    
-    const currentHour = parseInt(currentHourStr, 10);
-    const targetHour = parseInt(targetHourStr, 10);
+    const targetTime = over.id; // This will be in "HH:mm" format
+    const duration = 
+      (new Date(`1970-01-01T${draggingBlock.endTime}:00`).getTime() - 
+       new Date(`1970-01-01T${draggingBlock.startTime}:00`).getTime()) / 60000;
 
-    if (isNaN(currentHour) || isNaN(targetHour)) {
-      console.error('Invalid hour values:', {currentHourStr, targetHourStr});
-      return;
-    }
-
-    if (employeeId !== targetEmployeeId) return;
+    const newStartTime = targetTime;
+    const newEndTime = 
+      new Date(`1970-01-01T${targetTime}:00`).getTime() + duration * 60000;
 
     try {
-      console.log('Moving schedule block:', {
-        employeeId: targetEmployeeId,
-        date: date.toISOString().split('T')[0],
-        fromHour: draggingBlock.startHour,
-        toHour: targetHour,
-        duration: draggingBlock.duration
-      });
-      
-      await moveTemporaryScheduleBlock(
-        targetEmployeeId,
-        date.toISOString().split('T')[0],
-        draggingBlock.startHour,
-        targetHour,
-        draggingBlock.duration
+      await moveTimeBlock(
+        draggingBlock.id,
+        newStartTime,
+        new Date(newEndTime).toTimeString().slice(0, 5)
       );
-      
-      console.log('Temporary schedule block moved successfully');
     } catch (error) {
-      console.error('Error moving schedule block:', error);
+      console.error('Error moving time block:', error);
     } finally {
       setDraggingBlock(null);
     }
@@ -205,24 +187,29 @@ export function DaySchedule({ date }: DayScheduleProps) {
              </tr>
            </thead>
            <tbody>
-             {hours.map(hour => (
-               <tr key={hour}>
+             {timeSlots.map((time, i) => (
+               <tr key={time}>
                  <td className="p-2 font-medium border-r bg-muted/50">
                    <div className="flex items-center justify-between">
-                     <span>{format(new Date(0, 0, 0, hour), 'h:mm a')}</span>
-
+                     <span>{format(new Date(`1970-01-01T${time}:00`), 'h:mm a')}</span>
                    </div>
                  </td>
-                 {availableEmployees.map(employee => (
-                   <ScheduleCell
-                     key={`${employee.id}-${hour}`}
-                     employeeId={employee.id}
-                     hour={hour}
-                     date={date}
-                     availabilities={availabilities}
-                     temporarySchedules={temporarySchedules}
-                   />
-                 ))}
+                 {availableEmployees.map(employee => {
+                   const block = timeBlocks.find(b => 
+                     b.employeeId === employee.id &&
+                     time >= b.startTime &&
+                     time < b.endTime
+                   );
+                   
+                   return (
+                     <ScheduleCell
+                       key={`${employee.id}-${time}`}
+                       employeeId={employee.id}
+                       time={time}
+                       block={block}
+                     />
+                   );
+                 })}
                </tr>
              ))}
            </tbody>
@@ -234,63 +221,48 @@ export function DaySchedule({ date }: DayScheduleProps) {
 }
 
 interface ScheduleCellProps {
- employeeId: string;
- hour: number;
- date: Date;
- availabilities: EmployeeAvailability[];
- temporarySchedules: TemporarySchedule[];
+  employeeId: string;
+  time: string;
+  block?: TimeBlock;
 }
 
-function ScheduleCell({ 
- employeeId, 
- hour, 
- date,
- availabilities,
- temporarySchedules 
-}: ScheduleCellProps) {
- const employeeAvailability = availabilities.filter(a => 
-   a.employee_id === employeeId
- );
- 
-//  console.log(`Availability for employee ${employeeId}:`, employeeAvailability);
- 
- const isAvailable = employeeAvailability.some(a => {
-   const startHour = parseInt(a.start_time.split(':')[0]);
-   const endHour = parseInt(a.end_time.split(':')[0]);
-   return hour >= startHour && hour < endHour;
- });
+function ScheduleCell({ employeeId, time, block }: ScheduleCellProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `${employeeId}-${time}`
+  });
 
- const tempSchedule = temporarySchedules.find(t =>
-   t.employee_id === employeeId && t.hour === hour
- );
+  const { attributes, listeners, setNodeRef: setDragRef } = useDraggable({
+    id: block?.id || `${employeeId}-${time}`,
+    data: { blockId: block?.id }
+  });
 
- const { setNodeRef, isOver } = useDroppable({
-   id: `${employeeId}-${hour}`
- });
+  const cellClasses = cn(
+    "p-1 border h-12",
+    isOver && "bg-muted/50",
+    block && {
+      'bg-green-100': block.type === 'work',
+      'bg-yellow-100': block.type === 'break',
+      'bg-red-100': block.type === 'lunch'
+    }
+  );
 
- const { attributes, listeners, setNodeRef: setDragRef } = useDraggable({
-   id: `${employeeId}-${hour}`,
-   data: { employeeId, hour }
- });
-
- return (
-   <td 
-     ref={setNodeRef}
-     className={cn(
-       "p-1 border",
-       isOver && "bg-muted",
-       isAvailable && "bg-green-100",
-       tempSchedule?.is_active && "bg-blue-100"
-     )}
-   >
-     {isAvailable && (
-       <div
-         ref={setDragRef}
-         {...listeners}
-         {...attributes}
-         className="w-full h-12 cursor-move"
-       />
-     )}
-   </td>
- );
+  return (
+    <td 
+      ref={setNodeRef}
+      className={cellClasses}
+    >
+      {block && (
+        <div
+          ref={setDragRef}
+          {...listeners}
+          {...attributes}
+          className="w-full h-full cursor-move p-2"
+        >
+          {block.type === 'work' && 'Working'}
+          {block.type === 'break' && 'Break'}
+          {block.type === 'lunch' && 'Lunch'}
+        </div>
+      )}
+    </td>
+  );
 }

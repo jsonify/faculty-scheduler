@@ -4,22 +4,38 @@ import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import { Employee, EmployeeAvailability, TemporarySchedule } from '@/types/database';
 
-interface ScheduleState {
- employees: Employee[];
- availabilities: EmployeeAvailability[];
- temporarySchedules: TemporarySchedule[];
- loading: boolean;
- error: string | null;
+interface TimeBlock {
+  id: string;
+  employeeId: string;
+  startTime: string; // "HH:mm" format
+  endTime: string; // "HH:mm" format
+  type: 'work' | 'break' | 'lunch';
+}
 
- fetchEmployees: () => Promise<void>;
- fetchAvailability: (date: Date) => Promise<void>;
- updateTemporarySchedule: (
-   employeeId: string,
-   date: string, 
-   hour: number,
-   isActive: boolean
- ) => Promise<void>;
- clearTemporarySchedules: (date: string) => Promise<void>;
+interface ScheduleState {
+  employees: Employee[];
+  timeBlocks: TimeBlock[];
+  loading: boolean;
+  error: string | null;
+  
+  fetchEmployees: () => Promise<void>;
+  initializeTimeBlocks: (date: Date) => Promise<void>;
+  moveTimeBlock: (
+    blockId: string,
+    newStartTime: string,
+    newEndTime: string
+  ) => Promise<void>;
+  addBreak: (
+    employeeId: string,
+    startTime: string,
+    endTime: string
+  ) => Promise<void>;
+  addLunch: (
+    employeeId: string,
+    startTime: string,
+    endTime: string
+  ) => Promise<void>;
+  removeTimeBlock: (blockId: string) => Promise<void>;
 }
 
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
