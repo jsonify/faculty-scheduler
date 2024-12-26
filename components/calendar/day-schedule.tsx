@@ -171,9 +171,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
                  <td className="p-2 font-medium border-r bg-muted/50">
                    <div className="flex items-center justify-between">
                      <span>{format(new Date(0, 0, 0, hour), 'h:mm a')}</span>
-                     <span className="text-muted-foreground text-xs">
-                       {format(new Date(0, 0, 0, hour), 'HH:mm')}
-                     </span>
+
                    </div>
                  </td>
                  {availableEmployees.map(employee => (
