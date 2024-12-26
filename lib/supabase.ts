@@ -28,6 +28,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Add auth headers to all requests
+supabase
+  .from('temporary_schedules')
+  .on('*', (payload) => {
+    payload.headers = {
+      ...payload.headers,
+      'apikey': supabaseAnonKey,
+      'Authorization': `Bearer ${supabaseAnonKey}`
+    };
+    return payload;
+  });
+
 // Employee schedule utility functions
 export async function generateSchedulesForEmployee(employee_id: string) {
   try {
@@ -124,7 +136,8 @@ export async function getTemporarySchedules(date: string) {
       .from('temporary_schedules')
       .select('*,employee:employee_id(id,name,role)')
       .eq('date', date)
-      .order('hour', { ascending: true });
+      .order('hour', { ascending: true })
+      .auth(supabase.auth.session()?.access_token);
 
     if (error) throw error;
     return { data };
