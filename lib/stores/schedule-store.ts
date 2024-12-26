@@ -54,17 +54,41 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
      const dateStr = date.toISOString().split('T')[0];
      console.log('Initializing time blocks for date:', dateStr);
      
-     // Fetch existing time blocks from the database
-     const { data, error } = await supabase
+     // First ensure we have employees
+     if (!get().employees.length) {
+       await get().fetchEmployees();
+     }
+
+     // If no time blocks exist, create default ones
+     const { data: existingBlocks, error: fetchError } = await supabase
        .from('time_blocks')
        .select('*')
-       .eq('date', dateStr)
-       .auth(supabaseAnonKey);
+       .eq('date', dateStr);
 
-     if (error) throw error;
+     if (fetchError) throw fetchError;
 
-     console.log(`Found ${data?.length || 0} time blocks`);
-     set({ timeBlocks: data || [] });
+     if (!existingBlocks?.length) {
+       console.log('No time blocks found, creating default ones');
+       // Create default time blocks for each employee
+       const defaultBlocks = get().employees.map(employee => ({
+         employeeId: employee.id,
+         date: dateStr,
+         startTime: '09:00',
+         endTime: '16:00',
+         type: 'work'
+       }));
+
+       const { data: newBlocks, error: insertError } = await supabase
+         .from('time_blocks')
+         .insert(defaultBlocks)
+         .select();
+
+       if (insertError) throw insertError;
+       set({ timeBlocks: newBlocks || [] });
+     } else {
+       console.log(`Found ${existingBlocks.length} time blocks`);
+       set({ timeBlocks: existingBlocks });
+     }
    } catch (error: any) {
      console.error('Error initializing time blocks:', error);
      set({ error: error.message || 'Failed to initialize time blocks' });
@@ -89,7 +113,11 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
      }
      
      console.log(`Successfully fetched ${data?.length || 0} employees`);
-     set({ employees: data || [] });
+     set({ 
+       employees: data || [],
+       // Initialize time blocks if we have employees but no blocks
+       timeBlocks: get().timeBlocks.length ? get().timeBlocks : []
+     });
    } catch (error: any) {
      console.error('Error in fetchEmployees:', error);
      set({ error: error.message || 'Failed to fetch employees' });

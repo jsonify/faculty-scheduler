@@ -93,6 +93,11 @@ export function DaySchedule({ date }: DayScheduleProps) {
   }, [date, fetchEmployees, initializeTimeBlocks, fetchAvailability]);
 
   const availableEmployees = useMemo(() => {
+    if (!employees.length) return [];
+    
+    // If we have employees but no availabilities, show all employees
+    if (!availabilities.length) return employees;
+    
     return employees.filter(employee => {
       return availabilities.some(a => 
         a.employee_id === employee.id
