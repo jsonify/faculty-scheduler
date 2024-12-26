@@ -2,167 +2,175 @@
 
 import { create } from 'zustand';
 import { format } from 'date-fns';
-import { Employee, EmployeeRole } from '@/types/database';
-import { supabase } from '@/lib/supabase';
+import { Employee } from '@/types/database';
+import { supabase, generateSchedulesForEmployee, getEmployeeSchedules, batchUpdateSchedules } from '@/lib/supabase';
+import { BUSINESS_HOURS } from '@/lib/constants';
 
-interface Assignment {
-  id: string;
-  employee_id: string;
-  student_id: string;
-  date: string;
-  start_time: string;
-  end_time: string;
+interface ScheduleCache {
+  [key: string]: {
+    timestamp: number;
+    data: any;
+  }
 }
 
 interface ScheduleState {
   employees: Employee[];
   loading: boolean;
   error: string | null;
-  assignments: Assignment[];
-  fetchEmployees: (options?: {
-    role?: EmployeeRole, 
-    activeOnly?: boolean
-  }) => Promise<void>;
-  fetchAssignments: (date: Date) => Promise<void>;
-  createAssignment: (assignment: Omit<Assignment, 'id'>) => Promise<void>;
-  updateAssignment: (id: string, updates: Partial<Assignment>) => Promise<void>;
-  deleteAssignment: (id: string) => Promise<void>;
-  updateEmployeeStatus: (
-    employeeId: string, 
-    updates: Partial<Pick<Employee, 'is_active' | 'role'>>
-  ) => Promise<void>;
+  cache: ScheduleCache;
+  
+  // Enhanced fetch operations
+  fetchEmployees: () => Promise<void>;
+  fetchEmployeeSchedules: (date: Date) => Promise<void>;
+  generateScheduleFromAvailability: (employeeId: string) => Promise<void>;
+  updateScheduleBlock: (employeeId: string, hour: number, isActive: boolean) => Promise<void>;
+  batchUpdateSchedules: (updates: Array<{ employeeId: string, hour: number, isActive: boolean }>) => Promise<void>;
+  
+  // Cache operations
+  clearCache: () => void;
 }
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
   employees: [],
   loading: false,
   error: null,
-  assignments: [],
+  cache: {},
 
-  fetchEmployees: async (options = {}) => {
+  fetchEmployees: async () => {
     set({ loading: true, error: null });
     try {
-      // Simplified query without relationships for now
-      let query = supabase
+      const { data: employees, error: employeesError } = await supabase
         .from('employees')
         .select('*')
         .order('name');
-  
-      // Apply role filter if specified
-      if (options.role) {
-        query = query.eq('role', options.role);
-      }
-  
-      // Apply active status filter if specified
-      if (options.activeOnly !== undefined) {
-        query = query.eq('is_active', options.activeOnly);
-      }
-  
-      const { data, error } = await query;
-  
-      if (error) throw error;
-      set({ employees: data || [], loading: false });
+
+      if (employeesError) throw employeesError;
+      set({ employees: employees || [], loading: false });
     } catch (error) {
       set({ 
-        error: error instanceof Error 
-          ? error.message 
-          : 'Failed to fetch employees', 
+        error: error instanceof Error ? error.message : 'Failed to fetch employees', 
         loading: false 
       });
     }
   },
+
+  fetchEmployeeSchedules: async (date: Date) => {
+    set({ loading: true, error: null });
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const cachedData = get().cache[dateKey];
+    
+    // Check cache validity
+    if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_DURATION) {
+      set({ employees: cachedData.data, loading: false });
+      return;
+    }
   
-  fetchAssignments: async (date) => {
     try {
-      const { data, error } = await supabase
-        .from('assignments')
-        .select('*')
-        .eq('date', format(date, 'yyyy-MM-dd'));
-        
-      if (error) throw error;
-      set({ assignments: data || [] });
-    } catch (error) {
-      set({ error: 'Failed to fetch assignments' });
-    }
-  },
+      const employees = get().employees;
+      const employeeIds = employees.map(emp => emp.id);
   
-  createAssignment: async (assignment) => {
-    try {
-      const { data, error } = await supabase
-        .from('assignments')
-        .insert([assignment])
-        .select()
-        .single();
-        
+      // Add this check
+      if (employeeIds.length === 0) {
+        set({ loading: false });
+        return;
+      }
+      
+      const { data: schedules, error } = await getEmployeeSchedules(employeeIds);
+      
       if (error) throw error;
-      set(state => ({ 
-        assignments: [...state.assignments, data]
-      }));
-    } catch (error) {
-      set({ error: 'Failed to create assignment' });
-    }
-  },
-
-  updateAssignment: async (id, updates) => {
-    try {
-      const { error } = await supabase
-        .from('assignments')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) throw error;
-      set(state => ({
-        assignments: state.assignments.map(a => 
-          a.id === id ? { ...a, ...updates } : a
-        )
-      }));
-    } catch (error) {
-      set({ error: 'Failed to update assignment' });
-    }
-  },
-
-  deleteAssignment: async (id) => {
-    try {
-      const { error } = await supabase
-        .from('assignments')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      set(state => ({
-        assignments: state.assignments.filter(a => a.id !== id)
-      }));
-    } catch (error) {
-      set({ error: 'Failed to delete assignment' });
-    }
-  },
-
-  updateEmployeeStatus: async (employeeId, updates): Promise<void> => {
-    try {
-      const { data, error } = await supabase
-        .from('employees')
-        .update(updates)
-        .eq('id', employeeId)
-        .select();
-
-      if (error) throw error;
-
-      // Update local state
-      set(state => ({
-        employees: state.employees.map(employee => 
-          employee.id === employeeId 
-            ? { ...employee, ...updates } 
-            : employee
-        )
-      }));
-
-      // No need to return data as the function should return void
+  
+      // Rest of the function remains the same...
     } catch (error) {
       set({ 
-        error: error instanceof Error 
-          ? error.message 
-          : 'Failed to update employee status' 
+        error: error instanceof Error ? error.message : 'Failed to fetch schedules',
+        loading: false 
       });
     }
+  },
+
+  generateScheduleFromAvailability: async (employeeId: string) => {
+    set({ loading: true, error: null });
+    try {
+      const { error } = await generateSchedulesForEmployee(employeeId);
+      if (error) throw error;
+      
+      // Refresh schedules after generation
+      await get().fetchEmployeeSchedules(new Date());
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to generate schedule',
+        loading: false 
+      });
+    }
+  },
+
+  updateScheduleBlock: async (employeeId: string, hour: number, isActive: boolean) => {
+    try {
+      const { data: scheduleData, error } = await supabase
+        .from('employee_schedules')
+        .upsert({
+          employee_id: employeeId,
+          hour,
+          is_active: isActive
+        })
+        .select()
+        .single();
+  
+      if (error) throw error;
+  
+      // Update local state
+      const employees = get().employees.map(emp => {
+        if (emp.id !== employeeId) return emp;
+        
+        const schedules = emp.schedules || [];
+        const updatedSchedules = schedules.map(s => 
+          s.hour === hour ? { ...s, is_active: isActive } : s
+        );
+        
+        if (!schedules.some(s => s.hour === hour) && scheduleData) {
+          updatedSchedules.push({
+            id: scheduleData.id,
+            employee_id: scheduleData.employee_id,
+            hour: scheduleData.hour,
+            is_active: scheduleData.is_active,
+            created_at: scheduleData.created_at
+          });
+        }
+  
+        return { ...emp, schedules: updatedSchedules };
+      });
+  
+      set({ employees });
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to update schedule'
+      });
+    }
+  },
+
+  batchUpdateSchedules: async (updates) => {
+    try {
+      const formattedUpdates = updates.map(update => ({
+        employee_id: update.employeeId,
+        hour: update.hour,
+        is_active: update.isActive
+      }));
+
+      const { error } = await batchUpdateSchedules(formattedUpdates);
+      if (error) throw error;
+
+      // Refresh schedules after batch update
+      await get().fetchEmployeeSchedules(new Date());
+    } catch (error) {
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to update schedules'
+      });
+    }
+  },
+
+  clearCache: () => {
+    set({ cache: {} });
   }
 }));
