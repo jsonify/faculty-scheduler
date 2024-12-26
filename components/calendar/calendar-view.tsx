@@ -13,11 +13,11 @@ import { useScheduleStore } from "@/lib/stores/schedule-store";
 export function CalendarView() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
-  const { employees, fetchEmployeeSchedules } = useScheduleStore();
+  const { employees, fetchAvailability } = useScheduleStore();
 
   useEffect(() => {
-    fetchEmployeeSchedules(selectedDate);
-  }, [selectedDate]);
+    fetchAvailability(selectedDate);
+  }, [selectedDate, fetchAvailability]);
 
   return (
     <div className="space-y-6">
