@@ -41,11 +41,16 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   fetchEmployees: async () => {
     set({ loading: true, error: null });
     try {
+      console.log('Fetching employees...');
       const { data: employees, error: employeesError } = await supabase
         .from('employees')
         .select('*')
-        .order('name')
-        .throwOnError();  // This will help with debugging
+        .order('name');
+
+      if (employeesError) {
+        console.error('Error fetching employees:', employeesError);
+        throw employeesError;
+      }
 
       if (employeesError) throw employeesError;
       set({ employees: employees || [], loading: false });
@@ -87,12 +92,21 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       const { data: schedules, error } = await supabase
         .from('employee_schedules')
         .select('*')
-        .in('employee_id', employeeIds)
-        .throwOnError();  // This will help with debugging
-      
+        .in('employee_id', employeeIds);
+
       if (error) {
-        console.error('Supabase error details:', error);
+        console.error('Supabase error details:', {
+          error,
+          status: error.status,
+          message: error.message,
+          details: error.details
+        });
         throw error;
+      }
+
+      if (!schedules) {
+        console.log('No schedules found');
+        return;
       }
       
       console.log('Received schedules:', schedules);
@@ -141,6 +155,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
 
   updateScheduleBlock: async (employeeId: string, hour: number, isActive: boolean) => {
     try {
+      console.log('Updating schedule block:', { employeeId, hour, isActive });
       const { data: scheduleData, error } = await supabase
         .from('employee_schedules')
         .upsert({
@@ -148,11 +163,15 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
           hour,
           is_active: isActive
         }, {
-          onConflict: 'employee_id,hour'  // Specify the conflict resolution
+          onConflict: 'employee_id,hour'
         })
         .select()
-        .single()
-        .throwOnError();  // This will help with debugging
+        .single();
+
+      if (error) {
+        console.error('Error updating schedule:', error);
+        throw error;
+      }
   
       if (error) throw error;
   
