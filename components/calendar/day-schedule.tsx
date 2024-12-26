@@ -7,7 +7,7 @@ import { DndContext, DragEndEvent, useDraggable, useDroppable, MouseSensor, Touc
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useScheduleStore } from "@/lib/stores/schedule-store";
 import { Employee, EmployeeAvailability, TemporarySchedule } from "@/types/database";
 import { HOUR_BLOCKS } from "@/lib/constants";
@@ -40,6 +40,8 @@ export function DaySchedule({ date }: DayScheduleProps) {
     fetchEmployees();
     fetchAvailability(date);
   }, [date, fetchEmployees, fetchAvailability]);
+
+  const hours = useMemo(() => Array.from(Array(HOUR_BLOCKS).keys()), []);
 
   if (loading) {
     return <Card className="p-4">Loading...</Card>;
