@@ -75,7 +75,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
          <table className="w-full">
            <thead>
              <tr>
-               <th className="p-2">Time</th>
+               <th className="p-2 w-24">Time</th>
                {employees.map(employee => (
                  <th 
                    key={employee.id} 
@@ -96,8 +96,13 @@ export function DaySchedule({ date }: DayScheduleProps) {
            <tbody>
              {hours.map(hour => (
                <tr key={hour}>
-                 <td className="p-2 font-medium">
-                   {format(new Date().setHours(hour), 'h:mm a')}
+                 <td className="p-2 font-medium border-r bg-muted/50">
+                   <div className="flex items-center justify-between">
+                     <span>{format(new Date().setHours(hour), 'h:mm a')}</span>
+                     <span className="text-muted-foreground text-xs">
+                       {format(new Date().setHours(hour), 'HH:mm')}
+                     </span>
+                   </div>
                  </td>
                  {employees.map(employee => (
                    <ScheduleCell
