@@ -22,7 +22,7 @@ function getAvailabilityText(employeeId: string, availabilities: EmployeeAvailab
   
   // Group consecutive hours into ranges
   const ranges = [];
-  let currentRange = { start: null, end: null };
+  let currentRange: { start: number | null, end: number | null } = { start: null, end: null };
   
   availability.sort((a, b) => parseInt(a.start_time) - parseInt(b.start_time));
   
