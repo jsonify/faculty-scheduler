@@ -58,7 +58,8 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
      const { data, error } = await supabase
        .from('time_blocks')
        .select('*')
-       .eq('date', dateStr);
+       .eq('date', dateStr)
+       .auth(supabaseAnonKey);
 
      if (error) throw error;
 
