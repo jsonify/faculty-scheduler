@@ -5,10 +5,11 @@ import { supabase } from '@/lib/supabase';
 import { Employee, EmployeeAvailability, TemporarySchedule } from '@/types/database';
 
 interface TimeBlock {
-  id: string;
-  employeeId: string;
-  startTime: string; // "HH:mm" format
-  endTime: string; // "HH:mm" format
+  id?: string;
+  employee_id: string;
+  date: string;
+  start_time: string; // "HH:mm" format
+  end_time: string; // "HH:mm" format
   type: 'work' | 'break' | 'lunch';
 }
 
