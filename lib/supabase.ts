@@ -10,6 +10,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
+// Create two clients - one for public access, one for admin operations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: false,
@@ -17,14 +18,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   db: {
     schema: 'public'
+  }
+});
+
+export const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
   },
-  global: {
-    headers: {
-      'apikey': supabaseAnonKey,
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
-    }
+  db: {
+    schema: 'public'
   }
 });
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { Employee } from '@/types/database';
 
 export async function POST(request: Request) {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     });
 
     // Insert the blocks
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('time_blocks')
       .insert(timeBlocks)
       .select();
