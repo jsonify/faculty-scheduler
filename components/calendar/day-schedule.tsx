@@ -86,6 +86,14 @@ export function DaySchedule({ date }: DayScheduleProps) {
     fetchData();
   }, [date, fetchEmployees, fetchAvailability]);
 
+  const availableEmployees = useMemo(() => {
+    return employees.filter(employee => {
+      return availabilities.some(a => 
+        a.employee_id === employee.id
+      );
+    });
+  }, [employees, availabilities]);
+
   const hours = useMemo(() => {
     const BUSINESS_HOURS = { start: 8, end: 17 }; // 8am to 5pm
     return Array.from({ length: BUSINESS_HOURS.end - BUSINESS_HOURS.start }, 
@@ -137,7 +145,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
            <thead>
              <tr>
                <th className="p-2 w-24">Time</th>
-               {employees.map(employee => (
+               {availableEmployees.map(employee => (
                  <th 
                    key={employee.id} 
                    className={cn(
@@ -168,7 +176,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
                      </span>
                    </div>
                  </td>
-                 {employees.map(employee => (
+                 {availableEmployees.map(employee => (
                    <ScheduleCell
                      key={`${employee.id}-${hour}`}
                      employeeId={employee.id}
