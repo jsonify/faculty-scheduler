@@ -2,22 +2,24 @@
 
 export type EmployeeRole = 'teacher' | 'para-educator' | 'admin';
 
+export interface EmployeeSchedule {
+  id: string;
+  employee_id: string;
+  hour: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Employee {
   id: string;
   name: string;
-  email: string; // Add email field
+  email: string;
   role: EmployeeRole;
   is_active: boolean;
   archived_at?: string;
   archived_by?: string;
   created_at: string;
-  schedules?: {
-    id: string;
-    hour: number;
-    is_active: boolean;
-    employee_id: string;
-    created_at: string;
-  }[];
+  schedules?: EmployeeSchedule[];
   shifts?: Shift[];
   breaks?: Break[];
 }
@@ -93,6 +95,17 @@ export type Database = {
         Update: Partial<Omit<Employee, 'id' | 'created_at'>> & { 
           id?: string, 
           created_at?: string 
+        }
+      },
+      employee_schedules: {
+        Row: EmployeeSchedule,
+        Insert: Omit<EmployeeSchedule, 'id' | 'created_at'> & {
+          id?: string,
+          created_at?: string
+        },
+        Update: Partial<Omit<EmployeeSchedule, 'id' | 'created_at'>> & {
+          id?: string,
+          created_at?: string
         }
       },
       shifts: {
