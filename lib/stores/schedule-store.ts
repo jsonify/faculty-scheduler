@@ -48,6 +48,30 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
  loading: false,
  error: null,
 
+ initializeTimeBlocks: async (date: Date) => {
+   set({ loading: true, error: null });
+   try {
+     const dateStr = date.toISOString().split('T')[0];
+     console.log('Initializing time blocks for date:', dateStr);
+     
+     // Fetch existing time blocks from the database
+     const { data, error } = await supabase
+       .from('time_blocks')
+       .select('*')
+       .eq('date', dateStr);
+
+     if (error) throw error;
+
+     console.log(`Found ${data?.length || 0} time blocks`);
+     set({ timeBlocks: data || [] });
+   } catch (error: any) {
+     console.error('Error initializing time blocks:', error);
+     set({ error: error.message || 'Failed to initialize time blocks' });
+   } finally {
+     set({ loading: false });
+   }
+ },
+
  fetchEmployees: async () => {
    set({ loading: true, error: null });
    try {
