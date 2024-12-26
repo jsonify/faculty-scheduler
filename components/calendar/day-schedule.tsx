@@ -104,9 +104,25 @@ export function DaySchedule({ date }: DayScheduleProps) {
     return <Card className="p-4">Loading...</Card>;
   }
 
+  const [draggingBlock, setDraggingBlock] = useState<{startHour: number, duration: number} | null>(null);
+
+  const handleDragStart = (event: any) => {
+    const [employeeId, startHour] = event.active.id.toString().split('-');
+    // Check if there are consecutive active hours to determine block size
+    let duration = 1;
+    while (temporarySchedules.some(t => 
+      t.employee_id === employeeId && 
+      t.hour === parseInt(startHour) + duration &&
+      t.is_active
+    )) {
+      duration++;
+    }
+    setDraggingBlock({startHour: parseInt(startHour), duration});
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over) return;
+    if (!over || !draggingBlock) return;
 
     const [employeeId, currentHour] = active.id.toString().split('-');
     const [targetEmployeeId, targetHour] = over.id.toString().split('-');
@@ -114,10 +130,12 @@ export function DaySchedule({ date }: DayScheduleProps) {
     if (employeeId !== targetEmployeeId) return;
 
     try {
-      console.log('Updating temporary schedule for:', {
+      console.log('Moving schedule block:', {
         employeeId: targetEmployeeId,
         date: date.toISOString().split('T')[0],
-        hour: parseInt(targetHour)
+        fromHour: draggingBlock.startHour,
+        toHour: parseInt(targetHour),
+        duration: draggingBlock.duration
       });
       
       await updateTemporarySchedule(
@@ -130,6 +148,8 @@ export function DaySchedule({ date }: DayScheduleProps) {
       console.log('Temporary schedule updated successfully');
     } catch (error) {
       console.error('Error updating temporary schedule:', error);
+    } finally {
+      setDraggingBlock(null);
     }
   };
 
@@ -137,6 +157,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
     <DndContext 
       sensors={sensors}
       modifiers={[restrictToWindowEdges]}
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
      <Card className="p-4">

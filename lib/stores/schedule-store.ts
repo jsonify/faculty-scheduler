@@ -121,20 +121,34 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
    try {
      console.log(`Updating temporary schedule for employee ${employeeId} on ${date} at ${hour}:00`);
      
-     const { error } = await supabase
+     // First clear any existing schedule for this hour
+     const { error: deleteError } = await supabase
        .from('temporary_schedules')
-       .upsert({
-         employee_id: employeeId,
-         date,
-         hour,
-         is_active: isActive
-       }, {
-         onConflict: 'employee_id,date,hour'
-       });
+       .delete()
+       .eq('employee_id', employeeId)
+       .eq('date', date)
+       .eq('hour', hour);
 
-     if (error) {
-       console.error('Error updating temporary schedule:', error);
-       throw error;
+     if (deleteError) {
+       console.error('Error clearing existing schedule:', deleteError);
+       throw deleteError;
+     }
+
+     // If we're setting the schedule to active, create new record
+     if (isActive) {
+       const { error } = await supabase
+         .from('temporary_schedules')
+         .insert({
+           employee_id: employeeId,
+           date,
+           hour,
+           is_active: true
+         });
+
+       if (error) {
+         console.error('Error creating temporary schedule:', error);
+         throw error;
+       }
      }
 
      console.log('Temporary schedule updated successfully');
@@ -145,6 +159,58 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
    } catch (error: any) {
      console.error('Error in updateTemporarySchedule:', error);
      set({ error: error.message || 'Failed to update temporary schedule' });
+   }
+ },
+
+ // New method to handle block moves
+ moveTemporaryScheduleBlock: async (employeeId: string, date: string, fromHour: number, toHour: number, duration: number) => {
+   set({ error: null });
+   try {
+     console.log(`Moving schedule block for employee ${employeeId} from ${fromHour} to ${toHour} on ${date}`);
+
+     // First clear the destination hours
+     for (let i = 0; i < duration; i++) {
+       const { error: deleteError } = await supabase
+         .from('temporary_schedules')
+         .delete()
+         .eq('employee_id', employeeId)
+         .eq('date', date)
+         .eq('hour', toHour + i);
+
+       if (deleteError) {
+         console.error('Error clearing destination hours:', deleteError);
+         throw deleteError;
+       }
+     }
+
+     // Create new records for the moved block
+     const newSchedules = [];
+     for (let i = 0; i < duration; i++) {
+       newSchedules.push({
+         employee_id: employeeId,
+         date,
+         hour: toHour + i,
+         is_active: true
+       });
+     }
+
+     const { error } = await supabase
+       .from('temporary_schedules')
+       .insert(newSchedules);
+
+     if (error) {
+       console.error('Error creating moved schedules:', error);
+       throw error;
+     }
+
+     console.log('Schedule block moved successfully');
+     
+     // Refresh schedules after update
+     await get().fetchAvailability(new Date(date));
+
+   } catch (error: any) {
+     console.error('Error in moveTemporaryScheduleBlock:', error);
+     set({ error: error.message || 'Failed to move schedule block' });
    }
  },
 
