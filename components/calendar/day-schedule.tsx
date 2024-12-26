@@ -16,7 +16,7 @@ interface DayScheduleProps {
   date: Date;
 }
 
-function getAvailabilityText(employeeId: string) {
+function getAvailabilityText(employeeId: string, availabilities: EmployeeAvailability[]) {
   const availability = availabilities.filter(a => a.employee_id === employeeId);
   if (availability.length === 0) return 'Not available';
   
@@ -128,7 +128,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
                      {employee.role}
                    </div>
                    <div className="text-xs text-muted-foreground">
-                     {getAvailabilityText(employee.id)}
+                     {getAvailabilityText(employee.id, availabilities)}
                    </div>
                  </th>
                ))}
