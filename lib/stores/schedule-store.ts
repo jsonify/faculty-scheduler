@@ -82,7 +82,10 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         return;
       }
       
-      const { data: schedules, error } = await getEmployeeSchedules(employeeIds);
+      const { data: schedules, error } = await supabase
+        .from('employee_schedules')
+        .select('*')
+        .in('employee_id', employeeIds);
       
       if (error) throw error;
 
