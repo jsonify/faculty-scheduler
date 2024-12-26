@@ -101,20 +101,33 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
           message: error.message,
           details: error.details
         });
+        
+        // Handle RLS permission error specifically
+        if (error.message?.includes('permission denied')) {
+          console.warn('Permission denied - This is likely due to Row Level Security (RLS) policies.');
+          // Return empty schedules instead of throwing
+          return [];
+        }
+        
         throw error;
       }
 
       if (!schedules) {
         console.log('No schedules found');
-        return;
+        return [];
       }
+
+      return schedules;
       
       console.log('Received schedules:', schedules);
 
+      // Get schedules and handle potential RLS issues
+      const fetchedSchedules = await schedules;
+      
       // Update employees with their schedules
       const updatedEmployees = employees.map(emp => ({
         ...emp,
-        schedules: schedules?.filter(s => s.employee_id === emp.id) || []
+        schedules: (fetchedSchedules || []).filter(s => s.employee_id === emp.id)
       }));
 
       // Update state and cache
