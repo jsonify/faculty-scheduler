@@ -12,11 +12,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false, // Since we're using the anon key
+    persistSession: false,
     autoRefreshToken: false,
   },
   db: {
     schema: 'public'
+  },
+  global: {
+    headers: {
+      'apikey': supabaseAnonKey
+    }
   }
 });
 
@@ -109,12 +114,30 @@ export async function updateScheduleBlock(
   }
 }
 
+export async function getTemporarySchedules(date: string) {
+  try {
+    console.log('Fetching temporary schedules for date:', date);
+    const { data, error } = await supabase
+      .from('temporary_schedules')
+      .select('*,employee:employee_id(id,name,role)')
+      .eq('date', date)
+      .order('hour', { ascending: true });
+
+    if (error) throw error;
+    return { data };
+  } catch (error) {
+    console.error('Error fetching temporary schedules:', error);
+    return { error };
+  }
+}
+
 export async function batchUpdateSchedules(schedules: {
   employee_id: string;
   hour: number;
   is_active: boolean;
 }[]) {
   try {
+    console.log('Updating schedules:', schedules);
     const { data, error } = await supabase
       .from('employee_schedules')
       .upsert(schedules)
@@ -124,6 +147,7 @@ export async function batchUpdateSchedules(schedules: {
     return { data };
 
   } catch (error) {
+    console.error('Error updating schedules:', error);
     return { error };
   }
 }
