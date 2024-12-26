@@ -7,7 +7,7 @@ import { Employee } from "@/types/database";
 import { BUSINESS_HOURS } from "@/lib/constants";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useScheduleStore } from "@/lib/stores/schedule-store";
 
@@ -17,8 +17,12 @@ interface DayScheduleProps {
 }
 
 export function DaySchedule({ date, employees }: DayScheduleProps) {
-  const { updateScheduleBlock } = useScheduleStore();
+  const { employees: storeEmployees, updateScheduleBlock, fetchEmployees } = useScheduleStore();
   const [loading, setLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   const hours = Array.from(
     { length: BUSINESS_HOURS.END - BUSINESS_HOURS.START },
@@ -57,7 +61,7 @@ export function DaySchedule({ date, employees }: DayScheduleProps) {
               </tr>
             </thead>
             <tbody>
-              {employees.map(employee => (
+              {storeEmployees.map(employee => (
                 <tr key={employee.id}>
                   <td className="p-2 sticky left-0 bg-background border-r">
                     <div className="font-medium">{employee.name}</div>

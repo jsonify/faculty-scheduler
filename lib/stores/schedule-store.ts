@@ -48,6 +48,11 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
 
       if (employeesError) throw employeesError;
       set({ employees: employees || [], loading: false });
+      
+      // Fetch schedules for the current date after getting employees
+      if (employees?.length) {
+        await get().fetchEmployeeSchedules(new Date());
+      }
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to fetch employees', 
@@ -80,8 +85,25 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       const { data: schedules, error } = await getEmployeeSchedules(employeeIds);
       
       if (error) throw error;
-  
-      // Rest of the function remains the same...
+
+      // Update employees with their schedules
+      const updatedEmployees = employees.map(emp => ({
+        ...emp,
+        schedules: schedules?.filter(s => s.employee_id === emp.id) || []
+      }));
+
+      // Update state and cache
+      set({ 
+        employees: updatedEmployees, 
+        loading: false,
+        cache: {
+          ...get().cache,
+          [dateKey]: {
+            timestamp: Date.now(),
+            data: updatedEmployees
+          }
+        }
+      });
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to fetch schedules',
