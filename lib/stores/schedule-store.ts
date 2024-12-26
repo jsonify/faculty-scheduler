@@ -17,6 +17,8 @@ interface ScheduleState {
   timeBlocks: TimeBlock[];
   loading: boolean;
   error: string | null;
+  availabilities: EmployeeAvailability[];
+  temporarySchedules: TemporarySchedule[];
   
   fetchEmployees: () => Promise<void>;
   initializeTimeBlocks: (date: Date) => Promise<void>;
@@ -40,6 +42,7 @@ interface ScheduleState {
 
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
  employees: [],
+ timeBlocks: [],
  availabilities: [],
  temporarySchedules: [],
  loading: false,

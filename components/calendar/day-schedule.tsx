@@ -196,7 +196,7 @@ export function DaySchedule({ date }: DayScheduleProps) {
                    </div>
                  </td>
                  {availableEmployees.map(employee => {
-                   const block = timeBlocks.find(b => 
+                   const block = (timeBlocks || []).find(b => 
                      b.employeeId === employee.id &&
                      time >= b.startTime &&
                      time < b.endTime
