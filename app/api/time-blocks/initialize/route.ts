@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { NextResponse } from 'next/server';
 import { Employee } from '@/types/database';
 
 export async function POST(request: Request) {
