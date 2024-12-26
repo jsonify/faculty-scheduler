@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { Employee } from '@/types/database';
 
+export const dynamic = 'force-dynamic'; // Ensure this route is not statically optimized
+
 export async function POST(request: Request) {
+  console.log('POST request received at /api/time-blocks/initialize');
   try {
     const { date } = await request.json();
     if (!date) {
@@ -66,11 +69,15 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
+    console.log('Successfully initialized time blocks:', data);
     return NextResponse.json({ data }, { status: 200 });
   } catch (error: any) {
     console.error('Error initializing time blocks:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to initialize time blocks' },
+      { 
+        error: error.message || 'Failed to initialize time blocks',
+        details: error.details || null
+      },
       { status: 500 }
     );
   }
