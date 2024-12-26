@@ -100,22 +100,24 @@ export function DaySchedule({ date }: DayScheduleProps) {
       (_, i) => BUSINESS_HOURS.start + i);
   }, []);
 
+  const [draggingBlock, setDraggingBlock] = useState<{startHour: number, duration: number} | null>(null);
+
   if (loading) {
     return <Card className="p-4">Loading...</Card>;
   }
-
-  const [draggingBlock, setDraggingBlock] = useState<{startHour: number, duration: number} | null>(null);
 
   const handleDragStart = (event: any) => {
     const [employeeId, startHour] = event.active.id.toString().split('-');
     // Check if there are consecutive active hours to determine block size
     let duration = 1;
-    while (temporarySchedules.some(t => 
-      t.employee_id === employeeId && 
-      t.hour === parseInt(startHour) + duration &&
-      t.is_active
-    )) {
-      duration++;
+    if (temporarySchedules) {
+      while (temporarySchedules.some(t => 
+        t.employee_id === employeeId && 
+        t.hour === parseInt(startHour) + duration &&
+        t.is_active
+      )) {
+        duration++;
+      }
     }
     setDraggingBlock({startHour: parseInt(startHour), duration});
   };
