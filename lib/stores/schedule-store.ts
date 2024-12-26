@@ -59,7 +59,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
        await get().fetchEmployees();
      }
 
-     // If no time blocks exist, create default ones
+     // Check if we have any time blocks for this date
      const { data: existingBlocks, error: fetchError } = await supabase
        .from('time_blocks')
        .select('*')
@@ -67,17 +67,45 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
 
      if (fetchError) throw fetchError;
 
+     // If no time blocks exist, create default ones based on employee availability
      if (!existingBlocks?.length) {
        console.log('No time blocks found, creating default ones');
-       // Create default time blocks for each employee
-       const defaultBlocks = get().employees.map(employee => ({
-         employeeId: employee.id,
-         date: dateStr,
-         startTime: '09:00',
-         endTime: '16:00',
-         type: 'work'
-       }));
+       
+       // Get availability for this day of week
+       const dayOfWeek = date.getDay();
+       const { data: availabilities, error: availError } = await supabase
+         .from('employee_availability')
+         .select('*')
+         .eq('day_of_week', dayOfWeek);
 
+       if (availError) throw availError;
+
+       // Create time blocks for each employee based on their availability
+       const defaultBlocks = get().employees.flatMap(employee => {
+         const employeeAvailability = availabilities?.filter(a => a.employee_id === employee.id);
+         
+         // If no specific availability, use default 9-5
+         if (!employeeAvailability?.length) {
+           return [{
+             employeeId: employee.id,
+             date: dateStr,
+             startTime: '09:00',
+             endTime: '17:00',
+             type: 'work'
+           }];
+         }
+
+         // Create blocks for each availability slot
+         return employeeAvailability.map(avail => ({
+           employeeId: employee.id,
+           date: dateStr,
+           startTime: avail.start_time,
+           endTime: avail.end_time,
+           type: 'work'
+         }));
+       });
+
+       // Insert the blocks
        const { data: newBlocks, error: insertError } = await supabase
          .from('time_blocks')
          .insert(defaultBlocks)
