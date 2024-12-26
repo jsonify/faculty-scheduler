@@ -16,6 +16,40 @@ interface DayScheduleProps {
   date: Date;
 }
 
+function getAvailabilityText(employeeId: string) {
+  const availability = availabilities.filter(a => a.employee_id === employeeId);
+  if (availability.length === 0) return 'Not available';
+  
+  // Group consecutive hours into ranges
+  const ranges = [];
+  let currentRange = { start: null, end: null };
+  
+  availability.sort((a, b) => parseInt(a.start_time) - parseInt(b.start_time));
+  
+  availability.forEach(a => {
+    const start = parseInt(a.start_time.split(':')[0]);
+    const end = parseInt(a.end_time.split(':')[0]);
+    
+    if (!currentRange.start) {
+      currentRange = { start, end };
+    } else if (start <= currentRange.end) {
+      currentRange.end = Math.max(currentRange.end, end);
+    } else {
+      ranges.push(currentRange);
+      currentRange = { start, end };
+    }
+  });
+  
+  if (currentRange.start) {
+    ranges.push(currentRange);
+  }
+  
+  // Format ranges
+  return ranges.map(range => 
+    `${format(new Date(0, 0, 0, range.start), 'h a')} - ${format(new Date(0, 0, 0, range.end), 'h a')}`
+  ).join(', ');
+}
+
 export function DaySchedule({ date }: DayScheduleProps) {
   const { 
     employees,
@@ -92,6 +126,9 @@ export function DaySchedule({ date }: DayScheduleProps) {
                    <div className="font-medium">{employee.name}</div>
                    <div className="text-sm text-muted-foreground capitalize">
                      {employee.role}
+                   </div>
+                   <div className="text-xs text-muted-foreground">
+                     {getAvailabilityText(employee.id)}
                    </div>
                  </th>
                ))}
