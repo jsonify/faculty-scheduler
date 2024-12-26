@@ -28,25 +28,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Add auth headers to all requests
-supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-  db: {
-    schema: 'public'
-  },
-  global: {
-    headers: {
-      'apikey': supabaseAnonKey,
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
-    }
-  }
-});
-
 // Employee schedule utility functions
 export async function generateSchedulesForEmployee(employee_id: string) {
   try {
