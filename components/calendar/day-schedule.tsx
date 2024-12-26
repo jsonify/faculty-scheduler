@@ -107,27 +107,42 @@ export function DaySchedule({ date }: DayScheduleProps) {
   }
 
   const handleDragStart = (event: any) => {
-    const [employeeId, startHour] = event.active.id.toString().split('-');
+    const [employeeId, startHourStr] = event.active.id.toString().split('-');
+    const startHour = parseInt(startHourStr, 10);
+    
+    if (isNaN(startHour)) {
+      console.error('Invalid start hour:', startHourStr);
+      return;
+    }
+
     // Check if there are consecutive active hours to determine block size
     let duration = 1;
     if (temporarySchedules) {
       while (temporarySchedules.some(t => 
         t.employee_id === employeeId && 
-        t.hour === parseInt(startHour) + duration &&
+        t.hour === startHour + duration &&
         t.is_active
       )) {
         duration++;
       }
     }
-    setDraggingBlock({startHour: parseInt(startHour), duration});
+    setDraggingBlock({startHour, duration});
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || !draggingBlock) return;
 
-    const [employeeId, currentHour] = active.id.toString().split('-');
-    const [targetEmployeeId, targetHour] = over.id.toString().split('-');
+    const [employeeId, currentHourStr] = active.id.toString().split('-');
+    const [targetEmployeeId, targetHourStr] = over.id.toString().split('-');
+    
+    const currentHour = parseInt(currentHourStr, 10);
+    const targetHour = parseInt(targetHourStr, 10);
+
+    if (isNaN(currentHour) || isNaN(targetHour)) {
+      console.error('Invalid hour values:', {currentHourStr, targetHourStr});
+      return;
+    }
 
     if (employeeId !== targetEmployeeId) return;
 
@@ -136,20 +151,21 @@ export function DaySchedule({ date }: DayScheduleProps) {
         employeeId: targetEmployeeId,
         date: date.toISOString().split('T')[0],
         fromHour: draggingBlock.startHour,
-        toHour: parseInt(targetHour),
+        toHour: targetHour,
         duration: draggingBlock.duration
       });
       
-      await updateTemporarySchedule(
+      await moveTemporaryScheduleBlock(
         targetEmployeeId,
         date.toISOString().split('T')[0],
-        parseInt(targetHour),
-        true
+        draggingBlock.startHour,
+        targetHour,
+        draggingBlock.duration
       );
       
-      console.log('Temporary schedule updated successfully');
+      console.log('Temporary schedule block moved successfully');
     } catch (error) {
-      console.error('Error updating temporary schedule:', error);
+      console.error('Error moving schedule block:', error);
     } finally {
       setDraggingBlock(null);
     }
