@@ -1,5 +1,23 @@
 // types/database.ts
 
+export interface EmployeeAvailability {
+  id: string;
+  employee_id: string;
+  day_of_week: number; 
+  start_time: string;
+  end_time: string;
+  created_at: string;
+}
+
+export interface TemporarySchedule {
+  id: string;
+  employee_id: string;
+  date: string;
+  hour: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 export type EmployeeRole = 'teacher' | 'para-educator' | 'admin';
 
 export interface EmployeeSchedule {
