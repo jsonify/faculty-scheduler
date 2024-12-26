@@ -143,8 +143,13 @@ function ScheduleCell({
  availabilities,
  temporarySchedules 
 }: ScheduleCellProps) {
- const isAvailable = availabilities.some(a => 
-   a.employee_id === employeeId &&
+ const employeeAvailability = availabilities.filter(a => 
+   a.employee_id === employeeId
+ );
+ 
+ console.log(`Availability for employee ${employeeId}:`, employeeAvailability);
+ 
+ const isAvailable = employeeAvailability.some(a => 
    parseInt(a.start_time.split(':')[0]) <= hour &&
    parseInt(a.end_time.split(':')[0]) > hour
  );

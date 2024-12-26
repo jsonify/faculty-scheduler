@@ -53,19 +53,27 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
      // Get day of week (0-6)
      const dayOfWeek = date.getDay();
 
-     // Fetch recurring availability
+     // Fetch recurring availability with employee details
      const { data: availabilities, error: availError } = await supabase
        .from('employee_availability')
-       .select('*')
-       .eq('day_of_week', dayOfWeek);
+       .select(`
+         *,
+         employee:employee_id (id, name, role)
+       `)
+       .eq('day_of_week', dayOfWeek)
+       .order('start_time', { ascending: true });
 
      if (availError) throw availError;
 
-     // Fetch any temporary schedules for this date
+     // Fetch any temporary schedules for this date with employee details
      const { data: tempSchedules, error: tempError } = await supabase
        .from('temporary_schedules')
-       .select('*')
-       .eq('date', date.toISOString().split('T')[0]);
+       .select(`
+         *,
+         employee:employee_id (id, name, role)
+       `)
+       .eq('date', date.toISOString().split('T')[0])
+       .order('hour', { ascending: true });
 
      if (tempError) throw tempError;
 
