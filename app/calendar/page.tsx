@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { DaySchedule } from '@/components/calendar/day-schedule';
+import { DayView } from '@/components/calendar/DayView';
 import { getEmployees } from '@/lib/actions/employee';
 import { parseISO } from 'date-fns';
 
