@@ -20,6 +20,13 @@ export type Employee = {
   defaultStartTime?: string;
   defaultEndTime?: string;
   availability?: EmployeeAvailability[];
+  schedule?: TimeBlock[];
+  isAvailable?: boolean;
+  currentAssignment?: {
+    studentId: string;
+    startTime: string;
+    endTime: string;
+  } | null;
 };
 
 export type EmployeeAvailability = {

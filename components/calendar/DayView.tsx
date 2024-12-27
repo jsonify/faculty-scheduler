@@ -79,7 +79,7 @@ export function DayView({ date, paraEducators }: DayViewProps) {
                   )}
                 >
                   {timeSlots.map(hour => {
-                    const block = para.schedule.find(b => b.hour === hour);
+                    const block = para.schedule?.find(b => b.hour === hour);
                     return (
                       <div 
                         key={hour}
@@ -90,7 +90,7 @@ export function DayView({ date, paraEducators }: DayViewProps) {
                       >
                         {block?.isActive && para.currentAssignment && (
                           <div className="text-xs font-medium">
-                            Supporting student
+                            {para.currentAssignment ? "Supporting student" : "Available"}
                           </div>
                         )}
                       </div>
