@@ -1,3 +1,5 @@
+// components/daily-schedule/schedule-row.tsx
+
 "use client";
 
 import { Employee } from "@/types/schedule";
@@ -14,7 +16,12 @@ interface ScheduleRowProps {
 
 export function ScheduleRow({ employee }: ScheduleRowProps) {
   const router = useRouter();
-  const totalHours = employee.schedule.filter(block => block.isActive).length;
+  
+  // Calculate total work blocks (non-break, non-lunch)
+  const totalHours = employee.timeBlocks?.filter(block => 
+    block.type === 'work' && block.isActive
+  ).length || 0;
+
   const hoursStatus = totalHours < BUSINESS_HOURS.MIN_HOURS 
     ? "text-destructive"
     : totalHours > BUSINESS_HOURS.MAX_HOURS 
@@ -25,17 +32,17 @@ export function ScheduleRow({ employee }: ScheduleRowProps) {
     { length: BUSINESS_HOURS.END - BUSINESS_HOURS.START },
     (_, index) => {
       const hour = BUSINESS_HOURS.START + index;
-      const block = employee.schedule.find(b => b.hour === hour);
+      const block = employee.schedule?.find(b => b.hour === hour);
       return {
         hour,
-        isActive: block?.isActive || false
+        isActive: block?.isActive || false,
+        type: block?.block_type || 'work'
       };
     }
   );
 
   const handleViewSchedule = () => {
     router.push(`/dashboard/staff/${employee.id}`);
-    console.log('Employee ID:', employee.id)
   };
 
   return (
@@ -73,6 +80,7 @@ export function ScheduleRow({ employee }: ScheduleRowProps) {
               id={`${employee.id}-${block.hour}`}
               hour={block.hour}
               isActive={block.isActive}
+              type={block.type}
               employeeId={employee.id}
             />
           </td>

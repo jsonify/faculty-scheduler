@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Bell, Search } from "lucide-react";
-import { UserNav } from "./user-nav";
 
 export function Navbar() {
   return (
@@ -15,7 +14,6 @@ export function Navbar() {
           <Button variant="ghost" size="icon">
             <Bell className="h-4 w-4" />
           </Button>
-          <UserNav />
         </div>
       </div>
     </div>

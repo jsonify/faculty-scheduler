@@ -2,9 +2,12 @@
 
 export type SupportLevel = 1 | 2 | 3;
 
+export type TimeBlockType = 'work' | 'break' | 'lunch';
+
 export type TimeBlock = {
   hour: number;
   isActive: boolean;
+  type: TimeBlockType;
 };
 
 export type TimeSlot = {
@@ -21,7 +24,9 @@ export type Employee = {
   defaultEndTime?: string;
   availability?: EmployeeAvailability[];
   schedule?: TimeBlock[];
+  timeBlocks?: TimeBlock[];
   isAvailable?: boolean;
+  
   currentAssignment?: {
     studentId: string;
     startTime: string;

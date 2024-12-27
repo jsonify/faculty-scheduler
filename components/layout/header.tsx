@@ -1,6 +1,8 @@
+// components/layout/header.tsx
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Bell, Settings } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +11,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Bell, Settings } from "lucide-react";
 import { SettingsView } from "@/components/settings/settings-view";
 
 export function Header() {
@@ -31,7 +32,7 @@ export function Header() {
               <DialogHeader>
                 <DialogTitle>Settings</DialogTitle>
                 <DialogDescription>
-                  Manage your application settings
+                  Manage application settings
                 </DialogDescription>
               </DialogHeader>
               <div className="py-4">
