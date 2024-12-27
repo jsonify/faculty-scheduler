@@ -9,7 +9,7 @@ import { CoverageAlert } from "@/components/coverage-alert";
 import { StaffOverview } from "@/components/staff-overview";
 import { DailySchedule } from "@/components/daily-schedule/daily-schedule";
 
-export default function DashboardPage() {
+export function DashboardPage() {
   const { employees } = useScheduleStore();
   const { activeStaff, totalStaff } = getCurrentHourCoverage(employees);
 
