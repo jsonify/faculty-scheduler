@@ -40,7 +40,21 @@ export interface Employee {
   schedules?: EmployeeSchedule[];
   shifts?: Shift[];
   breaks?: Break[];
+  daily_minutes: number; // Total available minutes per day (default 420 for 7 hours)
+  break_minutes: number; // Required break minutes (default 30)
+  lunch_minutes: number; // Required lunch minutes (default 30)
 }
+
+// types/database.ts
+export interface TimeBlock {
+  id: string;
+  employee_id: string; 
+  date: string;
+  start_time: string;
+  end_time: string;
+  block_type: 'work' | 'break' | 'lunch';
+  created_at: string;
+ }
 
 export interface Shift {
   id: string;
