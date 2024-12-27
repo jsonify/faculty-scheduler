@@ -16,7 +16,9 @@ export function CalendarView() {
   const { employees, fetchAvailability } = useScheduleStore();
 
   useEffect(() => {
-    fetchAvailability(selectedDate);
+    if (typeof fetchAvailability === 'function') {
+      fetchAvailability(selectedDate);
+    }
   }, [selectedDate, fetchAvailability]);
 
   return (
