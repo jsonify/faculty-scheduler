@@ -12,6 +12,7 @@ import { MOCK_SHIFTS } from "@/constants/mock-shifts";
 import { TimeBlock, TimeBlockType } from "@/types/schedule";
 
 export function ScheduleView() {
+  console.log('Rendering ScheduleView');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);

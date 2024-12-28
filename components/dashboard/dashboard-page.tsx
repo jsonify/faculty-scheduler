@@ -10,8 +10,10 @@ import { StaffOverview } from "@/components/staff-overview";
 import { DailySchedule } from "@/components/daily-schedule/daily-schedule";
 
 export function DashboardPage() {
+  console.log('Rendering DashboardPage');
   const { employees } = useScheduleStore();
   const { activeStaff, totalStaff } = getCurrentHourCoverage(employees);
+  console.log('Employees:', employees);
 
   return (
     <div className="space-y-6">
