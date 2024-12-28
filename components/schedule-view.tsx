@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getEmployeesWithAvailability } from "@/lib/actions/employee";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { TimeSlot } from "@/components/schedule/time-slot";
@@ -14,6 +15,27 @@ export function ScheduleView() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
+  const [employees, setEmployees] = useState<(Employee & { availability: EmployeeAvailability[] })[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const employeesData = await getEmployeesWithAvailability();
+      setEmployees(employeesData);
+      
+      // Convert availability to time blocks
+      const blocks = employeesData.flatMap(employee => 
+        employee.availability.map(avail => ({
+          hour: parseInt(avail.start_time.split(':')[0]),
+          isActive: true,
+          type: 'work' as TimeBlockType,
+          employeeId: employee.id
+        }))
+      );
+      setTimeBlocks(blocks);
+    };
+    
+    fetchData();
+  }, []);
 
   const handleAddShift = () => {
     setDialogOpen(true);
@@ -114,6 +136,11 @@ export function ScheduleView() {
                         <span className="text-xs">
                           {block.hour}:00 - {block.hour + 1}:00
                         </span>
+                        {block.employeeId && (
+                          <span className="text-xs mt-1">
+                            {employees.find(e => e.id === block.employeeId)?.name}
+                          </span>
+                        )}
                       </div>
                       <button 
                         className="p-1 hover:bg-white/10 rounded"
