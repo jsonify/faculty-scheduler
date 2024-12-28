@@ -66,22 +66,70 @@ export function ScheduleView() {
             />
           ))}
           
-          {timeBlocks.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">Time Blocks</h3>
-              <div className="space-y-2">
-                {timeBlocks.map((block, index) => (
-                  <div key={index} className="p-2 border rounded">
-                    <span>Hour: {block.hour}</span>
-                    <span className="mx-2">|</span>
-                    <span>Type: {block.type}</span>
-                    <span className="mx-2">|</span>
-                    <span>Status: {block.isActive ? 'Active' : 'Inactive'}</span>
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Daily Time Blocks</h3>
+            <div className="relative h-96 overflow-x-auto">
+              {/* Timeline */}
+              <div className="absolute left-0 right-0 top-0 h-full flex">
+                {Array.from({ length: 24 }).map((_, hour) => (
+                  <div 
+                    key={hour} 
+                    className="h-full border-r border-gray-200 relative"
+                    style={{ width: '4.1667%' }} // 100% / 24 hours
+                  >
+                    <span className="absolute -top-5 left-1 text-xs text-gray-500">
+                      {hour % 12 === 0 ? 12 : hour % 12} {hour < 12 ? 'AM' : 'PM'}
+                    </span>
                   </div>
                 ))}
               </div>
+
+              {/* Time Blocks */}
+              <div className="absolute left-0 right-0 top-0 h-full">
+                {timeBlocks.map((block, index) => {
+                  const blockWidth = 4.1667; // Each hour is 4.1667% of width
+                  const leftPosition = block.hour * blockWidth;
+                  
+                  const blockColors = {
+                    work: 'bg-blue-500/90',
+                    break: 'bg-green-500/90',
+                    lunch: 'bg-orange-500/90'
+                  };
+
+                  return (
+                    <div
+                      key={index}
+                      className={`absolute h-16 rounded-lg p-2 flex items-center justify-between ${
+                        blockColors[block.type]
+                      } text-white shadow-sm hover:shadow-md transition-shadow`}
+                      style={{
+                        left: `${leftPosition}%`,
+                        width: `${blockWidth}%`
+                      }}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium capitalize">
+                          {block.type}
+                        </span>
+                        <span className="text-xs">
+                          {block.hour}:00 - {block.hour + 1}:00
+                        </span>
+                      </div>
+                      <button 
+                        className="p-1 hover:bg-white/10 rounded"
+                        onClick={() => handleUpdateTimeBlock(index, {
+                          ...block,
+                          isActive: !block.isActive
+                        })}
+                      >
+                        {block.isActive ? '✅' : '⏸️'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         <ShiftDialog />

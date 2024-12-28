@@ -8,6 +8,8 @@ export type TimeBlock = {
   hour: number;
   isActive: boolean;
   type: TimeBlockType;
+  description?: string;
+  location?: string;
 };
 
 export type TimeSlot = {
