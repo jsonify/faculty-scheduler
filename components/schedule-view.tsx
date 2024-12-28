@@ -23,14 +23,27 @@ export function ScheduleView() {
       setEmployees(employeesData);
       
       // Convert availability to time blocks
-      const blocks = employeesData.flatMap(employee => 
-        employee.availability.map(avail => ({
-          hour: parseInt(avail.start_time.split(':')[0]),
-          isActive: true,
-          type: 'work' as TimeBlockType,
-          employeeId: employee.id
-        }))
-      );
+      const blocks = employeesData.flatMap(employee => {
+        console.log(`Employee ${employee.name} availability:`, employee.availability);
+        return employee.availability.map(avail => {
+          const startHour = parseInt(avail.start_time.split(':')[0]);
+          const endHour = parseInt(avail.end_time.split(':')[0]);
+          
+          // Create a block for each hour in the availability range
+          const hours = [];
+          for (let hour = startHour; hour < endHour; hour++) {
+            hours.push({
+              hour,
+              isActive: true,
+              type: 'work' as TimeBlockType,
+              employeeId: employee.id,
+              description: `${employee.name}'s shift`,
+              location: 'Main Campus'
+            });
+          }
+          return hours;
+        }).flat();
+      });
       setTimeBlocks(blocks);
     };
     
@@ -107,7 +120,12 @@ export function ScheduleView() {
               </div>
 
               {/* Time Blocks */}
-              <div className="absolute left-0 right-0 top-0 h-full">
+              <div className="absolute left-0 right-0 top-0 h-full z-10">
+                {/* Debug Info */}
+                <div className="absolute bottom-0 left-0 p-2 bg-white/90 text-xs text-gray-600">
+                  <div>Total Employees: {employees.length}</div>
+                  <div>Total Time Blocks: {timeBlocks.length}</div>
+                </div>
                 {timeBlocks.map((block, index) => {
                   const blockWidth = 4.1667; // Each hour is 4.1667% of width
                   const leftPosition = block.hour * blockWidth;
