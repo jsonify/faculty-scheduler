@@ -7,20 +7,7 @@ import { TimeSlot } from "@/components/schedule/time-slot";
 import { ScheduleHeader } from "@/components/schedule/schedule-header";
 import { ShiftDialog } from "@/components/schedule/shift-dialog";
 
-const MOCK_SHIFTS = [
-  {
-    id: '1',
-    startTime: '6:00 AM',
-    endTime: '2:00 PM',
-    staffCount: 3,
-  },
-  {
-    id: '2',
-    startTime: '2:00 PM',
-    endTime: '10:00 PM',
-    staffCount: 2,
-  },
-];
+import { MOCK_SHIFTS } from "@/constants/mock-shifts";
 
 export function ScheduleView() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
