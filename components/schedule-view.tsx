@@ -106,14 +106,19 @@ export function ScheduleView() {
             <div className="grid grid-cols-[200px_repeat(24,_minmax(0,_1fr))] gap-px bg-gray-200">
               {/* Header Row */}
               <div className="bg-white sticky top-0 z-10"></div>
-              {Array.from({ length: 24 }).map((_, hour) => (
-                <div
-                  key={hour}
-                  className="bg-white p-2 text-center sticky top-0 z-10"
-                >
-                  {hour % 12 === 0 ? 12 : hour % 12} {hour < 12 ? 'AM' : 'PM'}
-                </div>
-              ))}
+              {Array.from({ length: 24 }).map((_, hour) => {
+                const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+                const ampm = hour < 12 ? 'AM' : 'PM';
+                return (
+                  <div
+                    key={hour}
+                    className="bg-white p-2 text-center sticky top-0 z-10 border-b border-gray-200"
+                  >
+                    <div className="text-sm font-medium">{displayHour}</div>
+                    <div className="text-xs text-gray-500">{ampm}</div>
+                  </div>
+                );
+              })}
 
               {/* Employee Rows */}
               {employees.map((employee) => (
@@ -125,14 +130,31 @@ export function ScheduleView() {
 
                   {/* Time Blocks */}
                   {Array.from({ length: 24 }).map((_, hour) => {
-                    const block = timeBlocks.find(
+                    // Check for both availability and scheduled blocks
+                    const availabilityBlock = employee.availability?.find(avail => {
+                      const startHour = parseInt(avail.start_time.split(':')[0]);
+                      const endHour = parseInt(avail.end_time.split(':')[0]);
+                      return hour >= startHour && hour < endHour;
+                    });
+
+                    const scheduledBlock = timeBlocks.find(
                       (b) => b.employeeId === employee.id && b.hour === hour
                     );
+
+                    const block = scheduledBlock || (availabilityBlock ? {
+                      hour,
+                      isActive: true,
+                      type: 'availability',
+                      employeeId: employee.id,
+                      description: 'Available',
+                      location: 'Main Campus'
+                    } : undefined);
 
                     const blockColors = {
                       work: 'bg-blue-500/90',
                       break: 'bg-green-500/90',
-                      lunch: 'bg-orange-500/90'
+                      lunch: 'bg-orange-500/90',
+                      availability: 'bg-green-100/90' // Light green for availability
                     };
 
                     return (
@@ -162,9 +184,26 @@ export function ScheduleView() {
             </div>
 
             {/* Debug Info */}
-            <div className="mt-4 p-2 bg-white text-xs text-gray-600">
+            <div className="mt-4 p-4 bg-white border rounded-lg text-sm text-gray-600 space-y-2">
+              <div className="font-medium">Debug Information</div>
               <div>Total Employees: {employees.length}</div>
               <div>Total Time Blocks: {timeBlocks.length}</div>
+              <div>Current Date: {selectedDate.toLocaleDateString()}</div>
+              <div className="mt-2">
+                <div className="font-medium">Employee Availability:</div>
+                {employees.map(employee => (
+                  <div key={employee.id} className="ml-2">
+                    {employee.name}: {employee.availability?.length || 0} blocks
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2">
+                <div className="font-medium">Time Block Types:</div>
+                {timeBlocks.reduce((acc, block) => {
+                  acc[block.type] = (acc[block.type] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>)}
+              </div>
             </div>
           </div>
         </div>
