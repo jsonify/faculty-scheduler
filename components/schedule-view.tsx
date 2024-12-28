@@ -200,10 +200,16 @@ export function ScheduleView() {
               </div>
               <div className="mt-2">
                 <div className="font-medium">Time Block Types:</div>
-                {timeBlocks.reduce((acc, block) => {
-                  acc[block.type] = (acc[block.type] || 0) + 1;
-                  return acc;
-                }, {} as Record<string, number>)}
+                {Object.entries(
+                  timeBlocks.reduce((acc, block) => {
+                    acc[block.type] = (acc[block.type] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>)
+                ).map(([type, count]) => (
+                  <div key={type} className="ml-2">
+                    {type}: {count}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
